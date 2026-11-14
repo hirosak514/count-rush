@@ -454,6 +454,16 @@
         <div class="hint">デフォルト 0.02。敵が倒される速さ(発射間隔)を調整。中央レーン減速率と組み合わせて「倒される速さ÷進んでくる速さ」の割合を調整できます</div>
       </div>
       <div class="devField">
+        <label>発射間隔 (秒)</label>
+        <input type="number" id="devFireIntervalInput" step="0.01" min="0.02" max="2">
+        <div class="hint">デフォルト 0.2。COUNTで短縮される前の基準となる発射間隔(秒)。小さいほど連射が速くなります(上の「やられる速さ」はこの値をさらに割って最終的な発射間隔にします)</div>
+      </div>
+      <div class="devField">
+        <label>一発あたりのダメージレベル</label>
+        <input type="number" id="devDmgLevelInput" step="0.1" min="0.1" max="20">
+        <div class="hint">デフォルト 1.0。弾が1発当たるごとに敵(歯磨き粉・ボス)が受けるダメージ量を、下の「弾の威力」計算結果にそのまま掛け算する倍率です。大きくするほど1発の威力が上がります</div>
+      </div>
+      <div class="devField">
         <label>接触時に消える列数</label>
         <input type="number" id="devCollisionRowsInput" step="1" min="1" max="100">
         <div class="hint">デフォルト 60。プレイヤーに敵が接触した瞬間、まとめて消滅する敵の列(奥行き方向)の数</div>
@@ -666,7 +676,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, bgmVariant: 2, killRateMul: 0.02, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, bgmVariant: 2, killRateMul: 0.02, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -677,6 +687,8 @@
       centerSlowPct: (typeof parsed.centerSlowPct==='number' && isFinite(parsed.centerSlowPct)) ? parsed.centerSlowPct : DEV_DEFAULTS.centerSlowPct,
       bgmVariant: (Number.isInteger(parsed.bgmVariant) && parsed.bgmVariant>=0 && parsed.bgmVariant<=4) ? parsed.bgmVariant : DEV_DEFAULTS.bgmVariant,
       killRateMul: (typeof parsed.killRateMul==='number' && isFinite(parsed.killRateMul)) ? parsed.killRateMul : DEV_DEFAULTS.killRateMul,
+      fireInterval: (typeof parsed.fireInterval==='number' && isFinite(parsed.fireInterval) && parsed.fireInterval>0) ? parsed.fireInterval : DEV_DEFAULTS.fireInterval,
+      dmgLevel: (typeof parsed.dmgLevel==='number' && isFinite(parsed.dmgLevel) && parsed.dmgLevel>0) ? parsed.dmgLevel : DEV_DEFAULTS.dmgLevel,
       collisionRows: (Number.isInteger(parsed.collisionRows) && parsed.collisionRows>=1) ? parsed.collisionRows : DEV_DEFAULTS.collisionRows,
       plate300Pct: (typeof parsed.plate300Pct==='number' && isFinite(parsed.plate300Pct)) ? parsed.plate300Pct : DEV_DEFAULTS.plate300Pct,
       plate1000Pct: (typeof parsed.plate1000Pct==='number' && isFinite(parsed.plate1000Pct)) ? parsed.plate1000Pct : DEV_DEFAULTS.plate1000Pct,
@@ -961,6 +973,8 @@
   const devSpeedCoefInput = document.getElementById('devSpeedCoefInput');
   const devCenterSlowInput = document.getElementById('devCenterSlowInput');
   const devKillRateInput = document.getElementById('devKillRateInput');
+  const devFireIntervalInput = document.getElementById('devFireIntervalInput');
+  const devDmgLevelInput = document.getElementById('devDmgLevelInput');
   const devCollisionRowsInput = document.getElementById('devCollisionRowsInput');
   const devPlate300Input = document.getElementById('devPlate300Input');
   const devPlate1000Input = document.getElementById('devPlate1000Input');
@@ -991,6 +1005,8 @@
     devSpeedCoefInput.value = devSettings.speedCoef;
     devCenterSlowInput.value = devSettings.centerSlowPct;
     devKillRateInput.value = devSettings.killRateMul;
+    devFireIntervalInput.value = devSettings.fireInterval;
+    devDmgLevelInput.value = devSettings.dmgLevel;
     devCollisionRowsInput.value = devSettings.collisionRows;
     devPlate300Input.value = devSettings.plate300Pct;
     devPlate1000Input.value = devSettings.plate1000Pct;
@@ -1034,6 +1050,8 @@
     let coef = parseFloat(devSpeedCoefInput.value);
     let centerSlowPct = parseFloat(devCenterSlowInput.value);
     let killRateMul = parseFloat(devKillRateInput.value);
+    let fireInterval = parseFloat(devFireIntervalInput.value);
+    let dmgLevel = parseFloat(devDmgLevelInput.value);
     let collisionRows = parseInt(devCollisionRowsInput.value, 10);
     let plate300Pct = parseFloat(devPlate300Input.value);
     let plate1000Pct = parseFloat(devPlate1000Input.value);
@@ -1052,6 +1070,8 @@
     if(!isFinite(coef) || coef<=0) coef = DEV_DEFAULTS.speedCoef;
     if(!isFinite(centerSlowPct)) centerSlowPct = DEV_DEFAULTS.centerSlowPct;
     if(!isFinite(killRateMul) || killRateMul<=0) killRateMul = DEV_DEFAULTS.killRateMul;
+    if(!isFinite(fireInterval) || fireInterval<=0) fireInterval = DEV_DEFAULTS.fireInterval;
+    if(!isFinite(dmgLevel) || dmgLevel<=0) dmgLevel = DEV_DEFAULTS.dmgLevel;
     if(!Number.isInteger(collisionRows) || collisionRows<1) collisionRows = DEV_DEFAULTS.collisionRows;
     if(!isFinite(plate300Pct)) plate300Pct = DEV_DEFAULTS.plate300Pct;
     if(!isFinite(plate1000Pct)) plate1000Pct = DEV_DEFAULTS.plate1000Pct;
@@ -1070,6 +1090,8 @@
     coef = Math.max(0.5, Math.min(3, coef));
     centerSlowPct = Math.max(0, Math.min(90, centerSlowPct));
     killRateMul = Math.max(0.01, Math.min(10, killRateMul));
+    fireInterval = Math.max(0.02, Math.min(2, fireInterval));
+    dmgLevel = Math.max(0.1, Math.min(20, dmgLevel));
     collisionRows = Math.max(1, Math.min(100, collisionRows));
     plate300Pct = Math.max(0, Math.min(100, plate300Pct));
     plate1000Pct = Math.max(0, Math.min(100, plate1000Pct));
@@ -1083,7 +1105,7 @@
     plate5000SpeedThreshold = Math.max(1, Math.min(50, plate5000SpeedThreshold));
     rowDensityGrowthPct = Math.max(0, Math.min(100, rowDensityGrowthPct));
     const bgmChanged = bgmVariant !== devSettings.bgmVariant;
-    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, bgmVariant, killRateMul, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct };
+    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, bgmVariant, killRateMul, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct };
     persistDevSettings(devSettings);
     applyDevSettingsLive();
     ensureAudio();
@@ -1098,6 +1120,8 @@
     devSpeedCoefInput.value = devSettings.speedCoef;
     devCenterSlowInput.value = devSettings.centerSlowPct;
     devKillRateInput.value = devSettings.killRateMul;
+    devFireIntervalInput.value = devSettings.fireInterval;
+    devDmgLevelInput.value = devSettings.dmgLevel;
     devCollisionRowsInput.value = devSettings.collisionRows;
     devPlate300Input.value = devSettings.plate300Pct;
     devPlate1000Input.value = devSettings.plate1000Pct;
@@ -1585,8 +1609,11 @@
   // Spawn depths pulled in closer to the player (lower d) so enemies/items first appear
   // noticeably nearer instead of reading as impossibly far away under the steeper overhead
   // camera (same ~85% ratio between the plate/spike depth and the center-lane depth as before).
-  const SPAWN_D_PLATE = 810;
-  const SPAWN_D_CENTER = 950;
+  // Pulled in much closer again - with the steeper overhead camera (lower camDist), the same
+  // depth value reads as farther away than it used to, so the spawn depth needs to come down
+  // too for things to actually look close at the moment they appear.
+  const SPAWN_D_PLATE = 270;
+  const SPAWN_D_CENTER = 320;
 
   function plateColor(value){
     if(value>=5000) return '#b06bff';
@@ -1635,7 +1662,7 @@
     items.push({type:'plate', lane:laneBig, d:SPAWN_D_PLATE, baseH:40, value: bigVal, dead:false});
   }
 
-  const SPAWN_D_SPIKE = 810;
+  const SPAWN_D_SPIKE = 270;
   const SPIKE_PENALTY_PCT = 0.10; // 10% of COUNT lost if not avoided
 
   function spawnSpikeTrap(){
@@ -1728,17 +1755,21 @@
 
     // fire bullets only in current lane; damage scales with crowd size
     fireTimer -= dt;
-    // devSettings.killRateMul tunes how fast enemies are "killed" (fire rate) relative to
+    // devSettings.fireInterval is the base shot interval (seconds) before COUNT shortens it;
+    // devSettings.killRateMul then tunes how fast enemies are "killed" (fire rate) relative to
     // devSettings.centerSlowPct's advance speed - raise it to make the swarm die off faster
     // per shot/sec, lower it to let the swarm advance faster than it's thinned out.
-    const fireRate = Math.max(0.02, (0.13 - player.count*0.0009) / Math.max(0.0001, devSettings.killRateMul));
+    const fireRate = Math.max(0.02, (devSettings.fireInterval - player.count*0.0009) / Math.max(0.0001, devSettings.killRateMul));
     // bullet power (damage dealt to toothpaste/boss per bullet) scales with COUNT divided by
     // devSettings.bulletDamageDiv - a bigger divisor means weaker bullets, tunable in dev mode.
     // On top of that, devSettings.dmgGrowthCoef compounds bullet power on the SAME milestone
     // cadence (every SPEED_MILESTONE_M meters) that speedCoef compounds scroll speed, so power
     // can be tuned to keep pace with (or fall behind/ahead of) how fast the game speeds up.
+    // devSettings.dmgLevel is a simple, direct multiplier on top of all that - a single "damage
+    // level" dial for quickly tuning how much damage each hit deals without touching the
+    // COUNT-based formula itself.
     const dmgGrowth = Math.pow(devSettings.dmgGrowthCoef, milestones);
-    const dmg = Math.max(1, Math.floor((player.count/devSettings.bulletDamageDiv) * dmgGrowth));
+    const dmg = Math.max(1, Math.floor((player.count/devSettings.bulletDamageDiv) * dmgGrowth * devSettings.dmgLevel));
     // multishot: COUNT past a threshold fires extra bullets per shot (not just faster shots),
     // capped at DRONE_COLS since a center-lane row only has that many columns to hit anyway.
     const MULTISHOT_PER_COUNT = 40;
