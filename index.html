@@ -552,7 +552,10 @@
       <b style="color:var(--danger)">赤い敵の群れ</b>や<b style="color:#ff8a5c">ボス</b>を倒しきれないと
       <b style="color:var(--danger)">LIFE</b>が減る。0になったら終了。<br>
       ボスを倒すとLIFEが回復する！<br><br>
-      時々現れる<b style="color:#ff8a5c">トゲ床</b>はレーンを移動して避けよう。踏むと仲間が10%減る。
+      時々現れる<b style="color:#ff8a5c">トゲ床</b>はレーンを移動して避けよう。踏むと仲間が10%減る。<br><br>
+      左右レーンにまれに出る<b style="color:#ffd23f">🍍パイナップル</b>を取ると爆弾をストック。
+      <b style="color:#ffd23f">↑キー・↓キー・Sキー</b>(スマホは<b style="color:#ffd23f">上へスワイプ</b>)で投下すると、
+      画面上の敵を一瞬で一掃できる!
     </p>
     <button class="btn" id="startBtn">スタート</button>
     <button class="btn secondary" id="openRankBtn" style="margin-top:12px;">🏆 ランキング</button>
@@ -595,14 +598,15 @@
   // ---------- Pseudo-3D overhead-angle camera ----------
   // Camera angled further downward (more overhead/top-down) per reference: the horizon sits
   // close to the very top of the screen (the vanishing point reads as "the back of the
-  // track") instead of a third of the way down, and the size falloff between near and far
-  // items is gentler (bigger camDist) so the scene reads as a flatter, more top-down view
-  // rather than a steep low-angle perspective that makes tall stacks of items spill upward
-  // out of frame.
-  const horizonY = H*0.085;
+  // track"), AND the size falloff between near and far items is made MORE dramatic (smaller
+  // camDist), not less - a steep top-down tilt is what makes near items loom large while far
+  // items shrink away quickly near that high horizon, which is the strong-perspective look in
+  // the reference image (a flatter/bigger-camDist camera, tried first, barely changed the
+  // picture because far items stayed roughly as large as before even with the horizon moved).
+  const horizonY = H*0.06;
   const playerRowY = H-120;
   const vanishX = W/2;
-  const camDist = 230; // smaller = steeper falloff = bigger size difference between near and far items (more pronounced depth cue)
+  const camDist = 95; // smaller = steeper falloff = bigger size difference between near and far items (more pronounced depth cue)
 
   function laneCenterX(lane){ // position at the near (player) row, full width
     return lane*laneW + laneW/2;
@@ -1569,8 +1573,11 @@
 
   // ---------- SPAWNING ----------
   // left lane (0): mostly +1 plates. right lane (2): mostly +99 plates (rarer, more valuable).
-  const SPAWN_D_PLATE = 1150;
-  const SPAWN_D_CENTER = 1350;
+  // Spawn depths pulled in closer to the player (lower d) so enemies/items first appear
+  // noticeably nearer instead of reading as impossibly far away under the steeper overhead
+  // camera (same ~85% ratio between the plate/spike depth and the center-lane depth as before).
+  const SPAWN_D_PLATE = 810;
+  const SPAWN_D_CENTER = 950;
 
   function plateColor(value){
     if(value>=5000) return '#b06bff';
@@ -1619,7 +1626,7 @@
     items.push({type:'plate', lane:laneBig, d:SPAWN_D_PLATE, baseH:40, value: bigVal, dead:false});
   }
 
-  const SPAWN_D_SPIKE = 1150;
+  const SPAWN_D_SPIKE = 810;
   const SPIKE_PENALTY_PCT = 0.10; // 10% of COUNT lost if not avoided
 
   function spawnSpikeTrap(){
