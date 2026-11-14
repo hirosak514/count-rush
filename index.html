@@ -1,0 +1,2295 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Count Rush - ナンバーランナー</title>
+<style>
+  :root{
+    --bg1:#0f1226;
+    --bg2:#1b1f3b;
+    --accent:#ffd23f;
+    --accent2:#3fa9ff;
+    --danger:#ff4d5e;
+    --good:#34e089;
+    --ui:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    background:radial-gradient(ellipse at top, var(--bg2), var(--bg1));
+    font-family:'Segoe UI', 'Hiragino Sans', sans-serif;
+    overflow:hidden;
+    touch-action:none;
+    -webkit-user-select:none;user-select:none;
+  }
+  #wrap{
+    position:relative;
+    width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #gameCanvas{
+    background:#15182e;
+    display:block;
+    max-width:100%;
+    max-height:100%;
+    box-shadow:0 0 60px rgba(0,0,0,0.6);
+    border-radius:8px;
+    touch-action:none;
+  }
+  #hud{
+    position:absolute;
+    top:0;left:0;right:0;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    padding:14px 18px;
+    pointer-events:none;
+    font-weight:800;
+    color:var(--ui);
+    text-shadow:0 2px 6px rgba(0,0,0,0.6);
+    z-index:5;
+  }
+  #countBox{
+    font-size:34px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  #countBox span.label{
+    font-size:13px;
+    font-weight:600;
+    opacity:0.75;
+    display:block;
+  }
+  #scoreBox{
+    text-align:right;
+    font-size:20px;
+  }
+  #scoreBox span.label{
+    font-size:12px;
+    font-weight:600;
+    opacity:0.75;
+    display:block;
+  }
+  #lifeWrap{
+    position:absolute;
+    top:84px;left:18px;right:18px;
+    z-index:5;
+    pointer-events:none;
+  }
+  #lifeLabel{
+    font-size:11px;
+    font-weight:800;
+    color:rgba(255,255,255,0.8);
+    text-shadow:0 2px 4px rgba(0,0,0,0.6);
+    margin-bottom:3px;
+    letter-spacing:1px;
+  }
+  #lifeBarOuter{
+    width:100%;
+    height:14px;
+    background:rgba(0,0,0,0.45);
+    border-radius:8px;
+    border:1.5px solid rgba(255,255,255,0.25);
+    overflow:hidden;
+  }
+  #lifeBarInner{
+    height:100%;
+    width:100%;
+    border-radius:8px;
+    background:linear-gradient(90deg,#34e089,#9ef542);
+    transition:width 0.15s ease-out, background 0.3s;
+  }
+  .overlay{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    background:rgba(10,12,28,0.88);
+    color:white;
+    text-align:center;
+    z-index:20;
+    padding:24px;
+  }
+  .overlay h1{
+    font-size:36px;
+    margin:0 0 6px;
+    background:linear-gradient(90deg,var(--accent),var(--good));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    letter-spacing:1px;
+  }
+  .overlay h2{
+    font-size:26px;
+    margin:0 0 14px;
+    color:var(--danger);
+  }
+  .overlay p{
+    font-size:13.5px;
+    line-height:1.7;
+    opacity:0.85;
+    max-width:310px;
+    margin:0 0 18px;
+    text-align:left;
+  }
+  .overlay p b{display:inline-block;}
+  .overlay .statline{
+    font-size:16px;
+    margin-bottom:18px;
+    opacity:0.9;
+  }
+  .btn{
+    background:linear-gradient(180deg,var(--accent2),#1d7fd6);
+    color:white;
+    border:none;
+    padding:14px 36px;
+    font-size:18px;
+    font-weight:800;
+    border-radius:30px;
+    cursor:pointer;
+    box-shadow:0 6px 0 #145a99, 0 10px 20px rgba(0,0,0,0.4);
+    letter-spacing:1px;
+  }
+  .btn:active{
+    transform:translateY(4px);
+    box-shadow:0 2px 0 #145a99, 0 4px 10px rgba(0,0,0,0.4);
+  }
+  #touchHint{
+    position:absolute;
+    bottom:16px;left:0;right:0;
+    text-align:center;
+    color:rgba(255,255,255,0.45);
+    font-size:12px;
+    z-index:4;
+    pointer-events:none;
+  }
+  #devTrigger{
+    position:absolute;
+    top:0;right:0;
+    width:46px;height:46px;
+    z-index:30;
+    background:transparent;
+    border:none;
+  }
+  #soundToggleBtn{
+    position:absolute;
+    top:8px;left:50%;
+    transform:translateX(-50%);
+    z-index:12;
+    background:rgba(0,0,0,0.4);
+    border:1px solid rgba(255,255,255,0.25);
+    color:#fff;
+    font-size:11px;
+    font-weight:700;
+    padding:5px 12px;
+    border-radius:16px;
+    cursor:pointer;
+    letter-spacing:0.5px;
+  }
+  #soundToggleBtn.muted{
+    opacity:0.55;
+  }
+  #pauseBtn, #quitBtn{
+    position:absolute;
+    top:96px;
+    z-index:12;
+    background:rgba(0,0,0,0.4);
+    border:1px solid rgba(255,255,255,0.25);
+    color:#fff;
+    font-size:15px;
+    font-weight:700;
+    width:32px;height:32px;
+    border-radius:50%;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    line-height:1;
+  }
+  #pauseBtn{ left:12px; }
+  #quitBtn{ right:12px; }
+  .devModal{
+    position:absolute;
+    inset:0;
+    background:rgba(5,6,16,0.92);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    padding:24px;
+  }
+  .devBox{
+    background:#1b1f3b;
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:14px;
+    padding:22px;
+    width:100%;
+    max-width:320px;
+    max-height:88vh;
+    overflow-y:auto;
+    color:#fff;
+    text-align:center;
+  }
+  .devBox h3{
+    margin:0 0 14px;
+    font-size:16px;
+    letter-spacing:1px;
+    color:#ffd23f;
+  }
+  .devBox input[type=password],
+  .devBox input[type=number],
+  .devBox select{
+    width:100%;
+    background:#10131f;
+    border:1px solid rgba(255,255,255,0.25);
+    border-radius:8px;
+    color:#fff;
+    font-size:15px;
+    padding:10px;
+    margin-bottom:12px;
+    text-align:center;
+    box-sizing:border-box;
+    font-family:inherit;
+  }
+  .devField{
+    text-align:left;
+    margin-bottom:14px;
+  }
+  .devField label{
+    display:block;
+    font-size:11px;
+    opacity:0.7;
+    margin-bottom:4px;
+    letter-spacing:0.5px;
+  }
+  .devField .hint{
+    font-size:10.5px;
+    opacity:0.5;
+    margin-top:2px;
+  }
+  .devRow{
+    display:flex;
+    gap:8px;
+    margin-top:4px;
+  }
+  .devRow .btn{
+    flex:1;
+    padding:10px 0;
+    font-size:14px;
+    box-shadow:0 4px 0 #145a99, 0 6px 14px rgba(0,0,0,0.4);
+  }
+  .devRow .btn.secondary{
+    background:linear-gradient(180deg,#666,#444);
+    box-shadow:0 4px 0 #222, 0 6px 14px rgba(0,0,0,0.4);
+  }
+  .devMsg{
+    font-size:12px;
+    color:#ff8a8a;
+    min-height:16px;
+    margin-bottom:8px;
+  }
+  .devBox input[type=text]{
+    width:100%;
+    background:#10131f;
+    border:1px solid rgba(255,255,255,0.25);
+    border-radius:8px;
+    color:#fff;
+    font-size:15px;
+    padding:10px;
+    margin-bottom:12px;
+    text-align:center;
+    box-sizing:border-box;
+    font-family:inherit;
+  }
+  .rankTabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .rankTabs .btn{
+    flex:1;
+    padding:9px 0;
+    font-size:13px;
+    box-shadow:0 4px 0 #145a99, 0 6px 14px rgba(0,0,0,0.4);
+  }
+  .rankTabs .btn.secondary{
+    background:linear-gradient(180deg,#666,#444);
+    box-shadow:0 4px 0 #222, 0 6px 14px rgba(0,0,0,0.4);
+  }
+  .rankList{
+    text-align:left;
+    margin-bottom:10px;
+    min-height:40px;
+  }
+  .rankRow{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:7px 4px;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+    font-size:14px;
+  }
+  .rankRow .rnum{
+    width:24px;
+    flex-shrink:0;
+    font-weight:800;
+    opacity:0.7;
+    text-align:right;
+  }
+  .rankRow .rflag{
+    flex-shrink:0;
+    font-size:16px;
+    line-height:1;
+  }
+  .rankRow.me{
+    background:rgba(255,210,63,0.12);
+    border-radius:6px;
+  }
+  .rankRow .rname{
+    flex:1;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .rankRow .rscore{
+    font-weight:800;
+    color:var(--accent2);
+    flex-shrink:0;
+  }
+  .rankEmptyMsg{
+    font-size:12.5px;
+    opacity:0.6;
+    text-align:center;
+    padding:14px 4px;
+  }
+  .rankSubmitBox{
+    margin-top:10px;
+    padding-top:12px;
+    border-top:1px solid rgba(255,255,255,0.12);
+  }
+  .rankSubmitMsg{
+    font-size:12px;
+    min-height:16px;
+    margin-bottom:4px;
+    color:#9ef542;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="gameCanvas" width="420" height="720"></canvas>
+  <div id="hud">
+    <div id="countBox"><span class="label">COUNT</span><span id="countVal">1</span></div>
+    <div id="scoreBox">
+      <span class="label">DISTANCE</span><span id="scoreVal">0</span>m
+      <div id="bombBox" style="margin-top:4px;font-size:15px;line-height:1.1;"><span class="label">BOMB</span>🍍<span id="bombVal">0</span></div>
+    </div>
+  </div>
+  <div id="lifeWrap">
+    <div id="lifeLabel">LIFE</div>
+    <div id="lifeBarOuter"><div id="lifeBarInner"></div></div>
+  </div>
+  <div id="touchHint">左右タップ / 矢印キー・A D でレーン移動 ・ 上へスワイプ / ↑↓・S で爆弾投下</div>
+  <button id="devTrigger" aria-label="dev"></button>
+  <button id="soundToggleBtn" aria-label="sound toggle">🔊 Sound</button>
+  <button id="pauseBtn" aria-label="pause" title="一時停止 (P)">⏸</button>
+  <button id="quitBtn" aria-label="quit" title="終了 (Esc)">✕</button>
+
+  <div class="overlay" id="pauseOverlay" style="display:none;">
+    <h1 style="font-size:30px;">PAUSED</h1>
+    <p style="text-align:center;">ゲームを一時停止中です。</p>
+    <button class="btn" id="resumeBtn">再開 (P)</button>
+    <button class="btn" id="pauseQuitBtn" style="margin-top:12px;background:linear-gradient(180deg,#888,#555);box-shadow:0 6px 0 #333,0 10px 20px rgba(0,0,0,0.4);">終了してタイトルへ</button>
+  </div>
+
+  <div class="devModal" id="devPasscodeModal">
+    <div class="devBox">
+      <h3>DEV MODE</h3>
+      <div class="devMsg" id="devPassMsg">&nbsp;</div>
+      <input type="password" id="devPassInput" inputmode="numeric" placeholder="パスコード" maxlength="12">
+      <div class="devRow">
+        <button class="btn secondary" id="devPassCancel">キャンセル</button>
+        <button class="btn" id="devPassOk">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="devModal" id="devPanelModal">
+    <div class="devBox">
+      <h3>DEV MODE - 速度調整</h3>
+      <div class="devField">
+        <label>初期スクロールスピード (%)</label>
+        <input type="number" id="devSpeedPctInput" step="1" min="10" max="500">
+        <div class="hint">デフォルト 85.0%</div>
+      </div>
+      <div class="devField">
+        <label>スピード係数</label>
+        <input type="number" id="devSpeedCoefInput" step="0.01" min="0.5" max="3">
+        <div class="hint">デフォルト 1.5。50m進むごとに速度へ乗算</div>
+      </div>
+      <div class="devField">
+        <label>中央レーン減速率 (%)</label>
+        <input type="number" id="devCenterSlowInput" step="1" min="0" max="90">
+        <div class="hint">デフォルト 60.0%。中央レーンは左右レーンよりこの割合だけ遅く流れてくる</div>
+      </div>
+      <div class="devField">
+        <label>やられる速さ (倍率)</label>
+        <input type="number" id="devKillRateInput" step="0.05" min="0.2" max="10">
+        <div class="hint">デフォルト 0.2。敵が倒される速さ(発射間隔)を調整。中央レーン減速率と組み合わせて「倒される速さ÷進んでくる速さ」の割合を調整できます</div>
+      </div>
+      <div class="devField">
+        <label>接触時に消える列数</label>
+        <input type="number" id="devCollisionRowsInput" step="1" min="1" max="100">
+        <div class="hint">デフォルト 60。プレイヤーに敵が接触した瞬間、まとめて消滅する敵の列(奥行き方向)の数</div>
+      </div>
+      <div class="devField">
+        <label>「300」板の出現率 (%)</label>
+        <input type="number" id="devPlate300Input" step="1" min="0" max="100">
+        <div class="hint">デフォルト 5%。左右レーンの板が「300」になる割合</div>
+      </div>
+      <div class="devField">
+        <label>「1000」板の出現率 (%)</label>
+        <input type="number" id="devPlate1000Input" step="1" min="0" max="100">
+        <div class="hint">デフォルト 1%。左右レーンの板が「1000」になる割合(「300」と合計で100%を超える場合は自動的に調整されます)</div>
+      </div>
+      <div class="devField">
+        <label>弾の威力 (COUNT ÷ N)</label>
+        <input type="number" id="devBulletDamageDivInput" step="50" min="10" max="100000">
+        <div class="hint">デフォルト 100000。歯磨き粉・ボスに与えるダメージ = floor(COUNT÷N)。数値を大きくするほど弾が弱くなります(COUNTが増えやすい設定の場合、かなり大きい値が必要になることがあります)</div>
+      </div>
+      <div class="devField">
+        <label>弾の威力の増加倍率</label>
+        <input type="number" id="devDmgGrowthInput" step="0.01" min="0.5" max="3">
+        <div class="hint">デフォルト 1.0(増加なし)。スピード係数と同じく50m進むごとに弾の威力に乗算されます。敵の進行スピードの伸びに弾の威力を追いつかせたい場合はスピード係数と近い値にしてください</div>
+      </div>
+      <div class="devField">
+        <label>敵の列が途切れる長さ(列数)</label>
+        <input type="number" id="devRowGapEveryInput" step="1" min="2" max="500">
+        <div class="hint">デフォルト 30。スピードが一定(基準の1.3倍)以上まで上がった後、120列進むごとに、この列数分だけ連続して敵の列が途切れます(例: 30なら30列分まとめて途切れる)。下の「増加率」が0より大きい場合、この列数はスピードが上がるにつれて自動的に伸びていきます</div>
+      </div>
+      <div class="devField">
+        <label>途切れる割合の増加率</label>
+        <input type="number" id="devGapGrowthInput" step="0.1" min="0" max="20">
+        <div class="hint">デフォルト 0.2。スピードが基準の1.3倍を超えた分だけ、途切れる列数が増えていきます(0にすると列数は増えず一定のまま)。値を大きくするほど、スピードが上がるにつれて途切れる割合が急激に増えます</div>
+      </div>
+      <div class="devField">
+        <label>最大スクロールスピード(倍率)</label>
+        <input type="number" id="devMaxSpeedMulInput" step="0.5" min="1" max="50">
+        <div class="hint">デフォルト 6.0。初期スピードの何倍までスピードが上がり続けられるかの上限です。スピード上昇は進んだ距離自体を加速させるため、上限がないとある時点から際限なく暴走し、描画や当たり判定が破綻します。上限を上げるほど高速域まで遊べますが、動きが不自然になりやすくなります</div>
+      </div>
+      <div class="devField">
+        <label>爆弾板の出現率 (%)</label>
+        <input type="number" id="devBombPctInput" step="0.1" min="0" max="100">
+        <div class="hint">デフォルト 10.0%。左右レーンの板の一方が爆弾になる確率です。爆弾を拾うと保持数が増え、↑↓キー・Sキー(スマホは上へスワイプ)で使うと画面上の敵を一掃できます</div>
+      </div>
+      <div class="devField">
+        <label>「5000」板の出現率 (%)</label>
+        <input type="number" id="devPlate5000Input" step="1" min="0" max="100">
+        <div class="hint">デフォルト 20%。下のスピード倍率に達した後、左右レーンの板が「5000」になる割合(「300」「1000」と合計で100%を超える場合は自動的に調整されます)</div>
+      </div>
+      <div class="devField">
+        <label>「5000」板が出現するスピード倍率</label>
+        <input type="number" id="devPlate5000ThresholdInput" step="0.1" min="1" max="50">
+        <div class="hint">デフォルト 2.0倍。初期スピードに対してこの倍率以上まで上がった後に「5000」板が出現し始めます</div>
+      </div>
+      <div class="devField">
+        <label>スピード上限到達後の列増加率 (%)</label>
+        <input type="number" id="devRowDensityInput" step="1" min="0" max="100">
+        <div class="hint">デフォルト 10%。スクロールスピードが「最大スクロールスピード(倍率)」に達して頭打ちになった後は、代わりに中央レーンの敵の列数(奥行き方向の密度)が50m進むごとにこの割合ずつ増えていきます</div>
+      </div>
+      <div class="devField">
+        <label>弾の発射音</label>
+        <select id="devShotSoundSelect">
+          <option value="0">タイプ1: ピュン(デフォルト)</option>
+          <option value="1">タイプ2: レーザー</option>
+          <option value="2">タイプ3: ブリップ</option>
+          <option value="3">タイプ4: パルス(低音)</option>
+          <option value="4">タイプ5: スパークル</option>
+        </select>
+        <div class="hint">弾を撃つたびに鳴る効果音を切り替え</div>
+      </div>
+      <div class="devField">
+        <label>BGM</label>
+        <select id="devBgmSelect">
+          <option value="0">BGM1: アーケード</option>
+          <option value="1">BGM2: レーシング</option>
+          <option value="2">BGM3: ダンジョン</option>
+          <option value="3">BGM4: スペースシューター</option>
+          <option value="4">BGM5: ボーナスステージ</option>
+        </select>
+        <div class="hint">プレイ中に流れる80年代風BGMを切り替え</div>
+      </div>
+      <div class="devRow">
+        <button class="btn secondary" id="devPanelReset">初期値に戻す</button>
+        <button class="btn" id="devPanelSave">保存して適用</button>
+      </div>
+      <div class="devRow">
+        <button class="btn secondary" id="devExportBtn">ファイルに保存</button>
+        <button class="btn secondary" id="devImportBtn">ファイルから読込</button>
+      </div>
+      <input type="file" id="devImportFileInput" accept="application/json,.json" style="display:none;">
+      <div class="hint" id="devFileMsg" style="text-align:center;min-height:1.2em;"></div>
+      <div class="devRow">
+        <button class="btn secondary" id="devPanelClose" style="width:100%;">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="startOverlay">
+    <h1>COUNT RUSH</h1>
+    <p>
+      <b style="color:var(--accent2)">左右のレーン</b>には「+1」と「+99」の板がランダムに出現。
+      そのレーンに乗って撃つと板が壊れて仲間が増える。<br><br>
+      <b style="color:#bda8ff">中央レーン</b>には歯磨き粉を撃って中身を出し切ると、
+      仲間が一気に増える！<br><br>
+      <b style="color:var(--danger)">赤い敵の群れ</b>や<b style="color:#ff8a5c">ボス</b>を倒しきれないと
+      <b style="color:var(--danger)">LIFE</b>が減る。0になったら終了。<br>
+      ボスを倒すとLIFEが回復する！<br><br>
+      時々現れる<b style="color:#ff8a5c">トゲ床</b>はレーンを移動して避けよう。踏むと仲間が10%減る。
+    </p>
+    <button class="btn" id="startBtn">スタート</button>
+    <button class="btn secondary" id="openRankBtn" style="margin-top:12px;">🏆 ランキング</button>
+  </div>
+
+  <div class="overlay" id="gameOverOverlay" style="display:none;">
+    <h2>GAME OVER</h2>
+    <div class="statline">到達距離: <b id="finalScore">0</b> m ／ 最大COUNT: <b id="finalCount">0</b></div>
+    <div id="rankResultMsg" style="font-size:13px;color:#ffd23f;min-height:18px;margin-bottom:8px;"></div>
+    <div class="rankSubmitBox" style="width:100%;max-width:280px;">
+      <input type="text" id="rankNameInput" placeholder="名前(10文字まで)" maxlength="10">
+      <div class="rankSubmitMsg" id="rankSubmitMsg"></div>
+      <button class="btn secondary" id="rankSubmitBtn" style="width:100%;margin-bottom:10px;">ランキングに登録</button>
+    </div>
+    <button class="btn" id="retryBtn">もう一度</button>
+    <button class="btn secondary" id="openRankBtnGameOver" style="margin-top:10px;">🏆 ランキングを見る</button>
+  </div>
+
+  <div class="devModal" id="rankModal">
+    <div class="devBox" style="max-width:340px;">
+      <h3>🏆 ランキング</h3>
+      <div class="rankTabs">
+        <button class="btn" id="rankTabLocal">自己ベスト</button>
+        <button class="btn secondary" id="rankTabGlobal">グローバル</button>
+      </div>
+      <div class="rankList" id="rankListBox"></div>
+      <button class="btn secondary" id="rankModalClose" style="width:100%;">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const LANES = 3;
+  const laneW = W / LANES;
+
+  // ---------- Pseudo-3D overhead-angle camera ----------
+  const horizonY = H*0.20;
+  const playerRowY = H-120;
+  const vanishX = W/2;
+  const camDist = 150; // smaller = steeper falloff = bigger size difference between near and far items (more pronounced depth cue)
+
+  function laneCenterX(lane){ // position at the near (player) row, full width
+    return lane*laneW + laneW/2;
+  }
+  function project(d){ // d = depth from player (0 = at player, large = far near horizon)
+    const dd = Math.max(0,d);
+    const scale = camDist/(camDist+dd);
+    return { scale, y: horizonY + scale*(playerRowY-horizonY) };
+  }
+  function screenX(lane, scale){
+    const lcx = laneCenterX(lane);
+    return vanishX + (lcx-vanishX)*scale;
+  }
+  function screenFlatX(flatX, scale){ // project an arbitrary flat (near-row) x position
+    return vanishX + (flatX-vanishX)*scale;
+  }
+  // Depth-dependent travel speed: a distant enemy (large d) closes in quickly, then visibly
+  // eases off the closer it gets to the player (small d) - the reverse of plain perspective
+  // motion, which exaggerates the sense of depth and gives the player a fairer, more readable
+  // approach near the player row instead of things "snapping" past at a constant rate.
+  function depthSpeedMul(d){
+    const t = Math.max(0, Math.min(1, d / SPAWN_D_CENTER));
+    return 0.45 + 1.35*t; // 0.45x right at the player row, up to 1.8x out at spawn depth
+  }
+  // A bullet fired into the center lane weaves naturally across the lane's width as it
+  // travels, instead of flying in a dead-straight line - makes it look like it's actually
+  // picking off enemies across the lane rather than always hitting the same spot.
+  const BULLET_WEAVE_FREQ = 0.018;
+  function bulletFlatX(b){
+    const laneCenterFlat = laneCenterX(b.lane);
+    if(b.lane !== 1) return laneCenterFlat;
+    const amp = laneW*0.36;
+    return laneCenterFlat + Math.sin(b.d*BULLET_WEAVE_FREQ + b.weaveSeed) * amp;
+  }
+
+  const countValEl = document.getElementById('countVal');
+  const scoreValEl = document.getElementById('scoreVal');
+  const lifeBarInner = document.getElementById('lifeBarInner');
+  const startOverlay = document.getElementById('startOverlay');
+  const gameOverOverlay = document.getElementById('gameOverOverlay');
+  const finalScoreEl = document.getElementById('finalScore');
+  const finalCountEl = document.getElementById('finalCount');
+
+  // ---------- DEV MODE ----------
+  // Passcode-gated tuning panel. Values persist in localStorage (fast, per-browser cache)
+  // AND, when available, in the account-level db capability (data/users/<id>/devSettings) -
+  // the db copy is what actually survives a reload if this artifact's localStorage ever
+  // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
+  const DEV_PASSCODE = '212116';
+  const DEV_KEY = 'countRush_devSettings_v1';
+  const DEV_DEFAULTS = { speedPct: 85.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, bgmVariant: 2, killRateMul: 0.2, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 10.0, plate5000Pct: 20.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0 };
+
+  function sanitizeDevSettings(parsed){
+    if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
+    return {
+      speedPct: (typeof parsed.speedPct==='number' && isFinite(parsed.speedPct)) ? parsed.speedPct : DEV_DEFAULTS.speedPct,
+      speedCoef: (typeof parsed.speedCoef==='number' && isFinite(parsed.speedCoef)) ? parsed.speedCoef : DEV_DEFAULTS.speedCoef,
+      soundVariant: (Number.isInteger(parsed.soundVariant) && parsed.soundVariant>=0 && parsed.soundVariant<=4) ? parsed.soundVariant : DEV_DEFAULTS.soundVariant,
+      centerSlowPct: (typeof parsed.centerSlowPct==='number' && isFinite(parsed.centerSlowPct)) ? parsed.centerSlowPct : DEV_DEFAULTS.centerSlowPct,
+      bgmVariant: (Number.isInteger(parsed.bgmVariant) && parsed.bgmVariant>=0 && parsed.bgmVariant<=4) ? parsed.bgmVariant : DEV_DEFAULTS.bgmVariant,
+      killRateMul: (typeof parsed.killRateMul==='number' && isFinite(parsed.killRateMul)) ? parsed.killRateMul : DEV_DEFAULTS.killRateMul,
+      collisionRows: (Number.isInteger(parsed.collisionRows) && parsed.collisionRows>=1) ? parsed.collisionRows : DEV_DEFAULTS.collisionRows,
+      plate300Pct: (typeof parsed.plate300Pct==='number' && isFinite(parsed.plate300Pct)) ? parsed.plate300Pct : DEV_DEFAULTS.plate300Pct,
+      plate1000Pct: (typeof parsed.plate1000Pct==='number' && isFinite(parsed.plate1000Pct)) ? parsed.plate1000Pct : DEV_DEFAULTS.plate1000Pct,
+      bulletDamageDiv: (typeof parsed.bulletDamageDiv==='number' && isFinite(parsed.bulletDamageDiv) && parsed.bulletDamageDiv>0) ? parsed.bulletDamageDiv : DEV_DEFAULTS.bulletDamageDiv,
+      dmgGrowthCoef: (typeof parsed.dmgGrowthCoef==='number' && isFinite(parsed.dmgGrowthCoef) && parsed.dmgGrowthCoef>0) ? parsed.dmgGrowthCoef : DEV_DEFAULTS.dmgGrowthCoef,
+      rowGapEvery: (Number.isInteger(parsed.rowGapEvery) && parsed.rowGapEvery>=2) ? parsed.rowGapEvery : DEV_DEFAULTS.rowGapEvery,
+      gapGrowthRate: (typeof parsed.gapGrowthRate==='number' && isFinite(parsed.gapGrowthRate) && parsed.gapGrowthRate>=0) ? parsed.gapGrowthRate : DEV_DEFAULTS.gapGrowthRate,
+      maxSpeedMul: (typeof parsed.maxSpeedMul==='number' && isFinite(parsed.maxSpeedMul) && parsed.maxSpeedMul>0) ? parsed.maxSpeedMul : DEV_DEFAULTS.maxSpeedMul,
+      bombPct: (typeof parsed.bombPct==='number' && isFinite(parsed.bombPct) && parsed.bombPct>=0) ? parsed.bombPct : DEV_DEFAULTS.bombPct,
+      plate5000Pct: (typeof parsed.plate5000Pct==='number' && isFinite(parsed.plate5000Pct) && parsed.plate5000Pct>=0) ? parsed.plate5000Pct : DEV_DEFAULTS.plate5000Pct,
+      plate5000SpeedThreshold: (typeof parsed.plate5000SpeedThreshold==='number' && isFinite(parsed.plate5000SpeedThreshold) && parsed.plate5000SpeedThreshold>0) ? parsed.plate5000SpeedThreshold : DEV_DEFAULTS.plate5000SpeedThreshold,
+      rowDensityGrowthPct: (typeof parsed.rowDensityGrowthPct==='number' && isFinite(parsed.rowDensityGrowthPct) && parsed.rowDensityGrowthPct>=0) ? parsed.rowDensityGrowthPct : DEV_DEFAULTS.rowDensityGrowthPct,
+    };
+  }
+  function loadDevSettings(){
+    try{
+      const raw = localStorage.getItem(DEV_KEY);
+      if(!raw) return Object.assign({}, DEV_DEFAULTS);
+      return sanitizeDevSettings(JSON.parse(raw));
+    }catch(e){ return Object.assign({}, DEV_DEFAULTS); }
+  }
+  function saveDevSettings(s){
+    try{ localStorage.setItem(DEV_KEY, JSON.stringify(s)); }catch(e){}
+  }
+  let devSettings = loadDevSettings();
+
+  // remote (db capability) mirror - best-effort, falls back silently to localStorage-only
+  let devSettingsDbDoc = null; // DocumentReference once available
+  function refreshDevPanelInputsIfOpen(){
+    try{
+      if(devPanelModal && devPanelModal.style.display === 'flex') openDevPanel();
+    }catch(e){}
+  }
+  async function initDevSettingsRemote(){
+    try{
+      if(!window.claude || typeof window.claude.use !== 'function') return;
+      const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+      if(!db || !user) return;
+      const id = await user.id();
+      if(!id) return;
+      devSettingsDbDoc = db.doc('data/users/'+id+'/devSettings');
+      const snap = await devSettingsDbDoc.get();
+      if(snap && snap.exists){
+        devSettings = sanitizeDevSettings(snap.data());
+        saveDevSettings(devSettings); // mirror into localStorage too
+        applyDevSettingsLive();
+        refreshDevPanelInputsIfOpen();
+      } else {
+        // no remote copy yet - seed it with whatever we have locally (defaults or a local save)
+        devSettingsDbDoc.set(devSettings).catch(()=>{});
+      }
+    }catch(e){ /* db unavailable for this view - localStorage-only is fine */ }
+  }
+  function persistDevSettings(s){
+    saveDevSettings(s);
+    if(devSettingsDbDoc){
+      devSettingsDbDoc.set(s).catch(()=>{});
+    }
+  }
+  initDevSettingsRemote();
+
+  // player-facing sound on/off (not passcode gated), persisted separately, default ON
+  const SOUND_KEY = 'countRush_soundOn_v1';
+  function loadSoundOn(){
+    try{
+      const raw = localStorage.getItem(SOUND_KEY);
+      return raw === null ? true : raw === '1';
+    }catch(e){ return true; }
+  }
+  let soundOn = loadSoundOn();
+  const soundToggleBtn = document.getElementById('soundToggleBtn');
+  function refreshSoundBtn(){
+    soundToggleBtn.textContent = soundOn ? '🔊 Sound' : '🔇 Sound';
+    soundToggleBtn.classList.toggle('muted', !soundOn);
+  }
+  refreshSoundBtn();
+  soundToggleBtn.addEventListener('click', ()=>{
+    ensureAudio();
+    soundOn = !soundOn;
+    try{ localStorage.setItem(SOUND_KEY, soundOn ? '1' : '0'); }catch(e){}
+    refreshSoundBtn();
+  });
+
+  // ---------- RANKING ----------
+  // Two tiers: a per-browser "自己ベスト" (local best) list that always works offline via
+  // localStorage, and an optional shared "グローバル" leaderboard backed by a free, keyless
+  // JSON-storage REST API (Pantry: https://getpantry.cloud/) so this works from a plain static
+  // page (e.g. hosted on GitHub Pages) with no server of its own. Set PANTRY_ID below to enable
+  // the global leaderboard - until it's set, the global tab just explains that it isn't
+  // configured yet and the local top-10 keeps working on its own.
+  const PANTRY_ID = ''; // <- put a Pantry ID here (see https://getpantry.cloud/) to turn on the global leaderboard
+  const RANK_BASKET_NAME = 'countrush_ranking';
+  const RANK_API_URL = PANTRY_ID ? ('https://getpantry.cloud/apiv1/pantry/'+PANTRY_ID+'/basket/'+RANK_BASKET_NAME) : null;
+  const RANK_GLOBAL_LIMIT = 50; // how many entries are kept server-side (basket has a 1MB cap)
+  const RANK_DISPLAY_LIMIT = 10; // how many are shown in the modal
+
+  const LOCAL_RANK_KEY = 'countRush_localRanking_v1';
+  const RANK_NAME_KEY = 'countRush_rankName_v1';
+  function loadLocalRanking(){
+    try{
+      const raw = localStorage.getItem(LOCAL_RANK_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){ return []; }
+  }
+  function saveLocalRanking(list){
+    try{ localStorage.setItem(LOCAL_RANK_KEY, JSON.stringify(list)); }catch(e){}
+  }
+  function addLocalRankEntry(name, distance, count, country){
+    const list = loadLocalRanking();
+    list.push({ name, distance, count, country: country||null, ts: Date.now() });
+    list.sort((a,b)=> b.distance - a.distance);
+    const trimmed = list.slice(0, RANK_GLOBAL_LIMIT);
+    saveLocalRanking(trimmed);
+    return trimmed;
+  }
+  function loadSavedRankName(){
+    try{ return localStorage.getItem(RANK_NAME_KEY) || ''; }catch(e){ return ''; }
+  }
+  function saveRankName(name){
+    try{ localStorage.setItem(RANK_NAME_KEY, name); }catch(e){}
+  }
+
+  // country (for the flag shown next to each ranking entry) - detected once via a free,
+  // keyless IP-geolocation API (GeoJS) and cached in localStorage so later runs don't need to
+  // look it up again. Never blocks gameplay: if it fails or hasn't resolved yet, entries are
+  // just saved/shown without a flag.
+  const COUNTRY_KEY = 'countRush_countryCode_v1';
+  let detectedCountryCode = null;
+  function loadCachedCountryCode(){
+    try{ return localStorage.getItem(COUNTRY_KEY) || null; }catch(e){ return null; }
+  }
+  async function detectCountryCode(){
+    const cached = loadCachedCountryCode();
+    if(cached){ detectedCountryCode = cached; return cached; }
+    try{
+      const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
+      if(!res.ok) return null;
+      const data = await res.json();
+      const code = (data && data.country_code) ? String(data.country_code).toUpperCase() : null;
+      if(code && code.length === 2){
+        detectedCountryCode = code;
+        try{ localStorage.setItem(COUNTRY_KEY, code); }catch(e){}
+        return code;
+      }
+      return null;
+    }catch(e){ return null; }
+  }
+  detectCountryCode(); // kick off in the background as soon as the page loads
+  function countryCodeToFlagEmoji(cc){
+    if(!cc || cc.length !== 2) return '🏳️';
+    const chars = cc.toUpperCase().split('').map(c => 0x1F1E6 + (c.charCodeAt(0) - 65));
+    return String.fromCodePoint(chars[0], chars[1]);
+  }
+
+  async function fetchGlobalRanking(){
+    if(!RANK_API_URL) return { ok:false, reason:'not_configured', entries:[] };
+    try{
+      const res = await fetch(RANK_API_URL, { method:'GET' });
+      if(res.status === 400 || res.status === 404){
+        // basket doesn't exist yet (no scores submitted yet) - treat as empty, not an error
+        return { ok:true, entries:[] };
+      }
+      if(!res.ok) return { ok:false, reason:'http_'+res.status, entries:[] };
+      const data = await res.json();
+      const entries = Array.isArray(data && data.scores) ? data.scores : [];
+      return { ok:true, entries };
+    }catch(e){
+      return { ok:false, reason:'network', entries:[] };
+    }
+  }
+  async function submitGlobalScore(name, distance, count, country){
+    if(!RANK_API_URL) return false;
+    try{
+      const current = await fetchGlobalRanking();
+      const entries = current.ok ? current.entries.slice() : [];
+      entries.push({ name, distance, count, country: country||null, ts: Date.now() });
+      entries.sort((a,b)=> (b.distance||0) - (a.distance||0));
+      const trimmed = entries.slice(0, RANK_GLOBAL_LIMIT);
+      const res = await fetch(RANK_API_URL, {
+        method:'PUT',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ scores: trimmed })
+      });
+      return res.ok;
+    }catch(e){ return false; }
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function renderRankRows(entries, highlightTs){
+    if(!entries.length) return '<div class="rankEmptyMsg">まだ記録がありません</div>';
+    return entries.slice(0, RANK_DISPLAY_LIMIT).map((e,i)=>{
+      const isMe = highlightTs && e.ts === highlightTs;
+      const name = e.name ? escapeHtml(e.name) : '名無し';
+      const flag = countryCodeToFlagEmoji(e.country);
+      return '<div class="rankRow'+(isMe?' me':'')+'">'
+        + '<div class="rnum">'+(i+1)+'</div>'
+        + '<div class="rflag">'+flag+'</div>'
+        + '<div class="rname">'+name+'</div>'
+        + '<div class="rscore">'+Math.floor(e.distance||0)+'m</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  const rankModal = document.getElementById('rankModal');
+  const rankListBox = document.getElementById('rankListBox');
+  const rankTabLocal = document.getElementById('rankTabLocal');
+  const rankTabGlobal = document.getElementById('rankTabGlobal');
+  let rankActiveTab = 'local';
+  let lastSubmittedTs = null;
+
+  async function renderRankModal(){
+    rankTabLocal.className = 'btn' + (rankActiveTab==='local' ? '' : ' secondary');
+    rankTabGlobal.className = 'btn' + (rankActiveTab==='global' ? '' : ' secondary');
+    if(rankActiveTab === 'local'){
+      rankListBox.innerHTML = renderRankRows(loadLocalRanking(), lastSubmittedTs);
+    } else {
+      if(!RANK_API_URL){
+        rankListBox.innerHTML = '<div class="rankEmptyMsg">グローバルランキングは準備中です(開発者側の設定待ち)。自己ベストは引き続き記録されます。</div>';
+        return;
+      }
+      rankListBox.innerHTML = '<div class="rankEmptyMsg">読み込み中...</div>';
+      const result = await fetchGlobalRanking();
+      if(rankActiveTab !== 'global') return; // tab switched away while loading
+      if(!result.ok){
+        rankListBox.innerHTML = '<div class="rankEmptyMsg">読み込みに失敗しました。通信環境をご確認のうえ、もう一度お試しください。</div>';
+        return;
+      }
+      rankListBox.innerHTML = renderRankRows(result.entries, lastSubmittedTs);
+    }
+  }
+  function openRankModal(){
+    rankModal.style.display = 'flex';
+    renderRankModal();
+  }
+  function closeRankModal(){ rankModal.style.display = 'none'; }
+  rankTabLocal.addEventListener('click', ()=>{ rankActiveTab = 'local'; renderRankModal(); });
+  rankTabGlobal.addEventListener('click', ()=>{ rankActiveTab = 'global'; renderRankModal(); });
+  document.getElementById('rankModalClose').addEventListener('click', closeRankModal);
+  document.getElementById('openRankBtn').addEventListener('click', openRankModal);
+  document.getElementById('openRankBtnGameOver').addEventListener('click', ()=>{ rankActiveTab='local'; openRankModal(); });
+
+  const rankNameInput = document.getElementById('rankNameInput');
+  const rankSubmitBtn = document.getElementById('rankSubmitBtn');
+  const rankSubmitMsg = document.getElementById('rankSubmitMsg');
+  const rankResultMsg = document.getElementById('rankResultMsg');
+  rankSubmitBtn.addEventListener('click', async ()=>{
+    const name = (rankNameInput.value || '').trim().slice(0, 10) || '名無し';
+    saveRankName(name);
+    rankSubmitBtn.disabled = true;
+    rankSubmitMsg.textContent = '登録中...';
+    const finalDistance = Math.floor(distance);
+    // the country lookup usually finished in the background already (kicked off on page load);
+    // if not, wait for it here rather than skip it, but don't let a slow/failed lookup block
+    // saving the score locally for long - detectCountryCode() already fails safe to null.
+    const country = detectedCountryCode || await detectCountryCode();
+    const list = addLocalRankEntry(name, finalDistance, maxCount, country);
+    const myEntry = list.find(e=> e.name===name && e.distance===finalDistance && e.count===maxCount);
+    lastSubmittedTs = myEntry ? myEntry.ts : null;
+    const rankPos = list.findIndex(e=> e.ts === lastSubmittedTs) + 1;
+    if(RANK_API_URL){
+      const ok = await submitGlobalScore(name, finalDistance, maxCount, country);
+      rankSubmitMsg.textContent = ok
+        ? '登録しました!(自己ベスト'+rankPos+'位)'
+        : '送信できませんでした(自己ベストには保存済み・'+rankPos+'位)';
+    } else {
+      rankSubmitMsg.textContent = '自己ベストに保存しました('+rankPos+'位)';
+    }
+    rankSubmitBtn.disabled = false;
+  });
+
+  const devTrigger = document.getElementById('devTrigger');
+  const devPasscodeModal = document.getElementById('devPasscodeModal');
+  const devPanelModal = document.getElementById('devPanelModal');
+  const devPassInput = document.getElementById('devPassInput');
+  const devPassMsg = document.getElementById('devPassMsg');
+  const devPassOk = document.getElementById('devPassOk');
+  const devPassCancel = document.getElementById('devPassCancel');
+  const devSpeedPctInput = document.getElementById('devSpeedPctInput');
+  const devSpeedCoefInput = document.getElementById('devSpeedCoefInput');
+  const devCenterSlowInput = document.getElementById('devCenterSlowInput');
+  const devKillRateInput = document.getElementById('devKillRateInput');
+  const devCollisionRowsInput = document.getElementById('devCollisionRowsInput');
+  const devPlate300Input = document.getElementById('devPlate300Input');
+  const devPlate1000Input = document.getElementById('devPlate1000Input');
+  const devBulletDamageDivInput = document.getElementById('devBulletDamageDivInput');
+  const devDmgGrowthInput = document.getElementById('devDmgGrowthInput');
+  const devRowGapEveryInput = document.getElementById('devRowGapEveryInput');
+  const devGapGrowthInput = document.getElementById('devGapGrowthInput');
+  const devMaxSpeedMulInput = document.getElementById('devMaxSpeedMulInput');
+  const devBombPctInput = document.getElementById('devBombPctInput');
+  const devPlate5000Input = document.getElementById('devPlate5000Input');
+  const devPlate5000ThresholdInput = document.getElementById('devPlate5000ThresholdInput');
+  const devRowDensityInput = document.getElementById('devRowDensityInput');
+  const devShotSoundSelect = document.getElementById('devShotSoundSelect');
+  const devBgmSelect = document.getElementById('devBgmSelect');
+  const devPanelSave = document.getElementById('devPanelSave');
+  const devPanelReset = document.getElementById('devPanelReset');
+  const devPanelClose = document.getElementById('devPanelClose');
+
+  function openDevPasscode(){
+    devPassInput.value = '';
+    devPassMsg.textContent = ' ';
+    devPasscodeModal.style.display = 'flex';
+    setTimeout(()=> devPassInput.focus(), 50);
+  }
+  function closeDevPasscode(){ devPasscodeModal.style.display = 'none'; }
+  function openDevPanel(){
+    devSpeedPctInput.value = devSettings.speedPct;
+    devSpeedCoefInput.value = devSettings.speedCoef;
+    devCenterSlowInput.value = devSettings.centerSlowPct;
+    devKillRateInput.value = devSettings.killRateMul;
+    devCollisionRowsInput.value = devSettings.collisionRows;
+    devPlate300Input.value = devSettings.plate300Pct;
+    devPlate1000Input.value = devSettings.plate1000Pct;
+    devBulletDamageDivInput.value = devSettings.bulletDamageDiv;
+    devDmgGrowthInput.value = devSettings.dmgGrowthCoef;
+    devRowGapEveryInput.value = devSettings.rowGapEvery;
+    devGapGrowthInput.value = devSettings.gapGrowthRate;
+    devMaxSpeedMulInput.value = devSettings.maxSpeedMul;
+    devBombPctInput.value = devSettings.bombPct;
+    devPlate5000Input.value = devSettings.plate5000Pct;
+    devPlate5000ThresholdInput.value = devSettings.plate5000SpeedThreshold;
+    devRowDensityInput.value = devSettings.rowDensityGrowthPct;
+    devShotSoundSelect.value = String(devSettings.soundVariant);
+    devBgmSelect.value = String(devSettings.bgmVariant);
+    devPanelModal.style.display = 'flex';
+  }
+  function closeDevPanel(){ devPanelModal.style.display = 'none'; }
+
+  function applyDevSettingsLive(){
+    // apply immediately to a run in progress, if any
+    if(player){
+      baseSpeed = BASE_SPEED_100 * (devSettings.speedPct/100);
+    }
+  }
+
+  devTrigger.addEventListener('click', openDevPasscode);
+  devPassCancel.addEventListener('click', closeDevPasscode);
+  devPassOk.addEventListener('click', ()=>{
+    if(devPassInput.value === DEV_PASSCODE){
+      closeDevPasscode();
+      openDevPanel();
+    } else {
+      devPassMsg.textContent = 'パスコードが違います';
+      devPassInput.value = '';
+    }
+  });
+  devPassInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') devPassOk.click(); });
+
+  devPanelSave.addEventListener('click', ()=>{
+    let pct = parseFloat(devSpeedPctInput.value);
+    let coef = parseFloat(devSpeedCoefInput.value);
+    let centerSlowPct = parseFloat(devCenterSlowInput.value);
+    let killRateMul = parseFloat(devKillRateInput.value);
+    let collisionRows = parseInt(devCollisionRowsInput.value, 10);
+    let plate300Pct = parseFloat(devPlate300Input.value);
+    let plate1000Pct = parseFloat(devPlate1000Input.value);
+    let bulletDamageDiv = parseFloat(devBulletDamageDivInput.value);
+    let dmgGrowthCoef = parseFloat(devDmgGrowthInput.value);
+    let rowGapEvery = parseInt(devRowGapEveryInput.value, 10);
+    let gapGrowthRate = parseFloat(devGapGrowthInput.value);
+    let maxSpeedMul = parseFloat(devMaxSpeedMulInput.value);
+    let bombPct = parseFloat(devBombPctInput.value);
+    let plate5000Pct = parseFloat(devPlate5000Input.value);
+    let plate5000SpeedThreshold = parseFloat(devPlate5000ThresholdInput.value);
+    let rowDensityGrowthPct = parseFloat(devRowDensityInput.value);
+    let soundVariant = parseInt(devShotSoundSelect.value, 10);
+    let bgmVariant = parseInt(devBgmSelect.value, 10);
+    if(!isFinite(pct) || pct<=0) pct = DEV_DEFAULTS.speedPct;
+    if(!isFinite(coef) || coef<=0) coef = DEV_DEFAULTS.speedCoef;
+    if(!isFinite(centerSlowPct)) centerSlowPct = DEV_DEFAULTS.centerSlowPct;
+    if(!isFinite(killRateMul) || killRateMul<=0) killRateMul = DEV_DEFAULTS.killRateMul;
+    if(!Number.isInteger(collisionRows) || collisionRows<1) collisionRows = DEV_DEFAULTS.collisionRows;
+    if(!isFinite(plate300Pct)) plate300Pct = DEV_DEFAULTS.plate300Pct;
+    if(!isFinite(plate1000Pct)) plate1000Pct = DEV_DEFAULTS.plate1000Pct;
+    if(!isFinite(bulletDamageDiv) || bulletDamageDiv<=0) bulletDamageDiv = DEV_DEFAULTS.bulletDamageDiv;
+    if(!isFinite(dmgGrowthCoef) || dmgGrowthCoef<=0) dmgGrowthCoef = DEV_DEFAULTS.dmgGrowthCoef;
+    if(!Number.isInteger(rowGapEvery) || rowGapEvery<2) rowGapEvery = DEV_DEFAULTS.rowGapEvery;
+    if(!isFinite(gapGrowthRate) || gapGrowthRate<0) gapGrowthRate = DEV_DEFAULTS.gapGrowthRate;
+    if(!isFinite(maxSpeedMul) || maxSpeedMul<=0) maxSpeedMul = DEV_DEFAULTS.maxSpeedMul;
+    if(!isFinite(bombPct) || bombPct<0) bombPct = DEV_DEFAULTS.bombPct;
+    if(!isFinite(plate5000Pct) || plate5000Pct<0) plate5000Pct = DEV_DEFAULTS.plate5000Pct;
+    if(!isFinite(plate5000SpeedThreshold) || plate5000SpeedThreshold<=0) plate5000SpeedThreshold = DEV_DEFAULTS.plate5000SpeedThreshold;
+    if(!isFinite(rowDensityGrowthPct) || rowDensityGrowthPct<0) rowDensityGrowthPct = DEV_DEFAULTS.rowDensityGrowthPct;
+    if(!Number.isInteger(soundVariant) || soundVariant<0 || soundVariant>4) soundVariant = DEV_DEFAULTS.soundVariant;
+    if(!Number.isInteger(bgmVariant) || bgmVariant<0 || bgmVariant>4) bgmVariant = DEV_DEFAULTS.bgmVariant;
+    pct = Math.max(10, Math.min(500, pct));
+    coef = Math.max(0.5, Math.min(3, coef));
+    centerSlowPct = Math.max(0, Math.min(90, centerSlowPct));
+    killRateMul = Math.max(0.2, Math.min(10, killRateMul));
+    collisionRows = Math.max(1, Math.min(100, collisionRows));
+    plate300Pct = Math.max(0, Math.min(100, plate300Pct));
+    plate1000Pct = Math.max(0, Math.min(100, plate1000Pct));
+    bulletDamageDiv = Math.max(10, Math.min(100000, bulletDamageDiv));
+    dmgGrowthCoef = Math.max(0.5, Math.min(3, dmgGrowthCoef));
+    rowGapEvery = Math.max(2, Math.min(500, rowGapEvery));
+    gapGrowthRate = Math.max(0, Math.min(20, gapGrowthRate));
+    maxSpeedMul = Math.max(1, Math.min(50, maxSpeedMul));
+    bombPct = Math.max(0, Math.min(100, bombPct));
+    plate5000Pct = Math.max(0, Math.min(100, plate5000Pct));
+    plate5000SpeedThreshold = Math.max(1, Math.min(50, plate5000SpeedThreshold));
+    rowDensityGrowthPct = Math.max(0, Math.min(100, rowDensityGrowthPct));
+    const bgmChanged = bgmVariant !== devSettings.bgmVariant;
+    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, bgmVariant, killRateMul, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct };
+    persistDevSettings(devSettings);
+    applyDevSettingsLive();
+    ensureAudio();
+    playShot();
+    if(bgmChanged && bgmIsPlaying) restartBGM();
+    closeDevPanel();
+  });
+  devPanelReset.addEventListener('click', ()=>{
+    devSettings = Object.assign({}, DEV_DEFAULTS);
+    persistDevSettings(devSettings);
+    devSpeedPctInput.value = devSettings.speedPct;
+    devSpeedCoefInput.value = devSettings.speedCoef;
+    devCenterSlowInput.value = devSettings.centerSlowPct;
+    devKillRateInput.value = devSettings.killRateMul;
+    devCollisionRowsInput.value = devSettings.collisionRows;
+    devPlate300Input.value = devSettings.plate300Pct;
+    devPlate1000Input.value = devSettings.plate1000Pct;
+    devBulletDamageDivInput.value = devSettings.bulletDamageDiv;
+    devDmgGrowthInput.value = devSettings.dmgGrowthCoef;
+    devRowGapEveryInput.value = devSettings.rowGapEvery;
+    devGapGrowthInput.value = devSettings.gapGrowthRate;
+    devMaxSpeedMulInput.value = devSettings.maxSpeedMul;
+    devBombPctInput.value = devSettings.bombPct;
+    devPlate5000Input.value = devSettings.plate5000Pct;
+    devPlate5000ThresholdInput.value = devSettings.plate5000SpeedThreshold;
+    devRowDensityInput.value = devSettings.rowDensityGrowthPct;
+    devShotSoundSelect.value = String(devSettings.soundVariant);
+    devBgmSelect.value = String(devSettings.bgmVariant);
+    applyDevSettingsLive();
+    if(bgmIsPlaying) restartBGM();
+  });
+  devPanelClose.addEventListener('click', closeDevPanel);
+
+  // ---- export / import dev settings as a JSON file, to any folder the user picks ----
+  // Export goes through the platform's "downloads" capability (claude.use('downloads')) -
+  // a plain <a download> link does nothing inside this artifact's viewer, since pages here
+  // aren't granted direct download access; the capability shows the viewer a save prompt
+  // where they choose the destination folder themselves. Import just reads a local file the
+  // viewer picks, which is a normal browser file-input action and needs no capability.
+  const devExportBtn = document.getElementById('devExportBtn');
+  const devImportBtn = document.getElementById('devImportBtn');
+  const devImportFileInput = document.getElementById('devImportFileInput');
+  const devFileMsg = document.getElementById('devFileMsg');
+  function showDevFileMsg(text){
+    devFileMsg.textContent = text;
+    setTimeout(()=>{ if(devFileMsg.textContent===text) devFileMsg.textContent=''; }, 3500);
+  }
+  let downloadsCap = null;
+  (async ()=>{
+    try{ if(window.claude && typeof window.claude.use==='function') downloadsCap = await window.claude.use('downloads'); }
+    catch(e){}
+  })();
+  devExportBtn.addEventListener('click', async ()=>{
+    const json = JSON.stringify(devSettings, null, 2);
+    if(!downloadsCap){
+      showDevFileMsg('この環境では保存できません');
+      return;
+    }
+    try{
+      await downloadsCap.save({ filename: 'countrush-devsettings.json', data: json });
+      showDevFileMsg('保存しました');
+    }catch(e){
+      showDevFileMsg(e && e.code==='declined' ? 'キャンセルされました' : '保存に失敗しました');
+    }
+  });
+  function applyImportedSettings(obj){
+    devSettings = sanitizeDevSettings(obj);
+    persistDevSettings(devSettings);
+    openDevPanel(); // refresh every input to the newly loaded values
+    applyDevSettingsLive();
+    if(bgmIsPlaying) restartBGM();
+    showDevFileMsg('読み込みました');
+  }
+  devImportBtn.addEventListener('click', ()=>{
+    devImportFileInput.click();
+  });
+  devImportFileInput.addEventListener('change', ()=>{
+    const file = devImportFileInput.files && devImportFileInput.files[0];
+    devImportFileInput.value = '';
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{ applyImportedSettings(JSON.parse(reader.result)); }
+      catch(e){ showDevFileMsg('読み込みに失敗しました'); }
+    };
+    reader.onerror = ()=> showDevFileMsg('読み込みに失敗しました');
+    reader.readAsText(file);
+  });
+
+  let state = 'idle'; // idle | playing | over
+
+  let player, bullets, items, particles, floatTexts;
+  let distance, elapsed, maxCount;
+  let spawnTimerSide, spawnTimerCenter, spawnTimerSpike, spawnTimerDrone, droneRowCounter = 0;
+  let bombCooldown = 0;
+  const BOMB_COOLDOWN_TIME = 0.6; // minimum time between bomb drops, so holding/mashing the
+                                    // key or rapid double-taps can't chain bombs like a machine gun
+  const bombValEl = document.getElementById('bombVal');
+  function updateBombHud(){
+    if(player) bombValEl.textContent = player.bombs||0;
+  }
+  let baseSpeed, speed;
+  let shakeT = 0;
+  let roadScroll = 0;
+
+  // ---------- Audio (synthesized, no external files) ----------
+  let actx = null;
+  function ensureAudio(){
+    if(!actx){
+      try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ actx=null; }
+    } else if(actx.state === 'suspended'){
+      actx.resume();
+    }
+  }
+  // 5 selectable shot-sound variants (dev mode picks devSettings.soundVariant, 0-4)
+  function playShot(){
+    if(!soundOn || !actx) return;
+    const t0 = actx.currentTime;
+    const variant = devSettings.soundVariant || 0;
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    if(variant === 0){ // ピュン
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(900, t0);
+      osc.frequency.exponentialRampToValueAtTime(260, t0+0.07);
+      gain.gain.setValueAtTime(0.09, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0+0.08);
+      osc.connect(gain); gain.connect(actx.destination);
+      osc.start(t0); osc.stop(t0+0.09);
+    } else if(variant === 1){ // レーザー
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(1500, t0);
+      osc.frequency.exponentialRampToValueAtTime(380, t0+0.1);
+      gain.gain.setValueAtTime(0.07, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0+0.11);
+      osc.connect(gain); gain.connect(actx.destination);
+      osc.start(t0); osc.stop(t0+0.12);
+    } else if(variant === 2){ // ブリップ
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1300, t0);
+      gain.gain.setValueAtTime(0.1, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0+0.045);
+      osc.connect(gain); gain.connect(actx.destination);
+      osc.start(t0); osc.stop(t0+0.05);
+    } else if(variant === 3){ // パルス(低音)
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(320, t0);
+      osc.frequency.exponentialRampToValueAtTime(110, t0+0.1);
+      gain.gain.setValueAtTime(0.13, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0+0.11);
+      osc.connect(gain); gain.connect(actx.destination);
+      osc.start(t0); osc.stop(t0+0.12);
+    } else { // スパークル
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1800, t0);
+      osc.frequency.exponentialRampToValueAtTime(2600, t0+0.03);
+      osc.frequency.exponentialRampToValueAtTime(900, t0+0.08);
+      gain.gain.setValueAtTime(0.08, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0+0.09);
+      osc.connect(gain); gain.connect(actx.destination);
+      osc.start(t0); osc.stop(t0+0.1);
+    }
+  }
+  function playPop(freq){
+    if(!soundOn || !actx) return;
+    const t0 = actx.currentTime;
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq||520, t0);
+    osc.frequency.exponentialRampToValueAtTime((freq||520)*1.8, t0+0.09);
+    gain.gain.setValueAtTime(0.12, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+0.12);
+    osc.connect(gain); gain.connect(actx.destination);
+    osc.start(t0); osc.stop(t0+0.13);
+  }
+  function playHit(){
+    if(!soundOn || !actx) return;
+    const t0 = actx.currentTime;
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(160, t0);
+    osc.frequency.exponentialRampToValueAtTime(60, t0+0.18);
+    gain.gain.setValueAtTime(0.14, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+0.2);
+    osc.connect(gain); gain.connect(actx.destination);
+    osc.start(t0); osc.stop(t0+0.2);
+  }
+  function playExplosion(){
+    if(!soundOn || !actx) return;
+    const t0 = actx.currentTime;
+    // noise burst
+    const bufSize = Math.floor(actx.sampleRate*0.4);
+    const buf = actx.createBuffer(1, bufSize, actx.sampleRate);
+    const data = buf.getChannelData(0);
+    for(let i=0;i<bufSize;i++){ data[i] = (Math.random()*2-1) * Math.pow(1-i/bufSize, 2); }
+    const noise = actx.createBufferSource();
+    noise.buffer = buf;
+    const noiseFilter = actx.createBiquadFilter();
+    noiseFilter.type = 'lowpass';
+    noiseFilter.frequency.setValueAtTime(2200, t0);
+    noiseFilter.frequency.exponentialRampToValueAtTime(140, t0+0.4);
+    const noiseGain = actx.createGain();
+    noiseGain.gain.setValueAtTime(0.35, t0);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, t0+0.4);
+    noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(actx.destination);
+    noise.start(t0); noise.stop(t0+0.4);
+    // low "boom"
+    const boom = actx.createOscillator();
+    const boomGain = actx.createGain();
+    boom.type = 'sine';
+    boom.frequency.setValueAtTime(140, t0);
+    boom.frequency.exponentialRampToValueAtTime(35, t0+0.35);
+    boomGain.gain.setValueAtTime(0.4, t0);
+    boomGain.gain.exponentialRampToValueAtTime(0.001, t0+0.38);
+    boom.connect(boomGain); boomGain.connect(actx.destination);
+    boom.start(t0); boom.stop(t0+0.4);
+  }
+
+  // ---------- BGM (looping 80s-style chiptune, 5 selectable variants) ----------
+  const BGM_PATTERNS = [
+    { name:'アーケード', tempo:140, waveBass:'square', waveLead:'square',
+      bass:[130.81,0,130.81,0,164.81,0,130.81,0],
+      lead:[523.25,659.25,783.99,659.25,523.25,659.25,783.99,987.77] },
+    { name:'レーシング', tempo:168, waveBass:'sawtooth', waveLead:'square',
+      bass:[146.83,146.83,196.00,196.00,164.81,164.81,196.00,196.00],
+      lead:[587.33,739.99,880.00,739.99,587.33,739.99,880.00,1046.50] },
+    { name:'ダンジョン', tempo:100, waveBass:'triangle', waveLead:'triangle',
+      bass:[110.00,0,98.00,0,87.31,0,98.00,0],
+      lead:[440.00,523.25,440.00,392.00,349.23,392.00,440.00,523.25] },
+    { name:'スペースシューター', tempo:150, waveBass:'square', waveLead:'sawtooth',
+      bass:[98.00,98.00,0,98.00,110.00,110.00,0,110.00],
+      lead:[783.99,987.77,1174.66,987.77,783.99,987.77,1174.66,1396.91] },
+    { name:'ボーナスステージ', tempo:172, waveBass:'square', waveLead:'square',
+      bass:[196.00,0,246.94,0,261.63,0,246.94,0],
+      lead:[783.99,880.00,987.77,1046.50,1174.66,1046.50,987.77,880.00] },
+  ];
+  let bgmIsPlaying = false;
+  let bgmTimeoutId = null;
+  let bgmStepIdx = 0;
+
+  function bgmNoteOsc(freq, type, dur, vol){
+    if(!actx) return;
+    const t0 = actx.currentTime;
+    const osc = actx.createOscillator();
+    const g = actx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(vol, t0+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    osc.connect(g); g.connect(actx.destination);
+    osc.start(t0); osc.stop(t0+dur+0.02);
+  }
+  function bgmScheduleStep(){
+    if(!bgmIsPlaying) return;
+    const pat = BGM_PATTERNS[devSettings.bgmVariant] || BGM_PATTERNS[0];
+    const stepDur = 60/pat.tempo/2; // eighth-note step length in seconds
+    const i = bgmStepIdx % 8;
+    if(soundOn && actx){
+      const bf = pat.bass[i];
+      const lf = pat.lead[i];
+      if(bf) bgmNoteOsc(bf, pat.waveBass, stepDur*0.9, 0.05);
+      if(lf) bgmNoteOsc(lf, pat.waveLead, stepDur*0.8, 0.045);
+    }
+    bgmStepIdx++;
+    bgmTimeoutId = setTimeout(bgmScheduleStep, stepDur*1000);
+  }
+  function startBGM(){
+    if(bgmIsPlaying) return;
+    bgmIsPlaying = true;
+    bgmStepIdx = 0;
+    bgmScheduleStep();
+  }
+  function stopBGM(){
+    bgmIsPlaying = false;
+    if(bgmTimeoutId){ clearTimeout(bgmTimeoutId); bgmTimeoutId = null; }
+  }
+  function restartBGM(){
+    stopBGM();
+    startBGM();
+  }
+
+  const MAX_ENERGY = 100;
+  const BASE_SPEED_100 = 552; // depth units/sec = dev "100%" (already 15% slower than the original build)
+  const SPEED_MILESTONE_M = 50; // every this many meters, multiply speed by devSettings.speedCoef
+
+  function resetGame(){
+    player = {
+      lane: 1,
+      targetLane: 1,
+      count: 1,
+      energy: MAX_ENERGY,
+      maxEnergy: MAX_ENERGY,
+      bombs: 0,
+    };
+    bullets = [];
+    items = [];
+    particles = [];
+    floatTexts = [];
+    distance = 0;
+    elapsed = 0;
+    maxCount = player.count;
+    spawnTimerSide = 0.2;
+    spawnTimerCenter = 1.8;
+    spawnTimerSpike = 4.0;
+    spawnTimerDrone = 0.1;
+    droneRowCounter = 0;
+    bombCooldown = 0;
+    baseSpeed = BASE_SPEED_100 * (devSettings.speedPct/100);
+    speed = baseSpeed;
+    updateLifeBar();
+    updateBombHud();
+  }
+
+  function updateLifeBar(){
+    const pct = Math.max(0, Math.min(100, (player.energy/player.maxEnergy)*100));
+    lifeBarInner.style.width = pct + '%';
+    lifeBarInner.style.background = pct > 50
+      ? 'linear-gradient(90deg,#34e089,#9ef542)'
+      : (pct > 20 ? 'linear-gradient(90deg,#ffd23f,#ff9f4a)' : 'linear-gradient(90deg,#ff4d5e,#ff2d4a)');
+  }
+
+  function startGame(){
+    ensureAudio();
+    resetGame();
+    state = 'playing';
+    isPaused = false;
+    startOverlay.style.display = 'none';
+    gameOverOverlay.style.display = 'none';
+    pauseOverlay.style.display = 'none';
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+    startBGM();
+  }
+
+  function endGame(){
+    state = 'over';
+    isPaused = false;
+    pauseOverlay.style.display = 'none';
+    finalScoreEl.textContent = Math.floor(distance);
+    finalCountEl.textContent = maxCount;
+    gameOverOverlay.style.display = 'flex';
+    stopBGM();
+    // ranking: prefill the saved name, show whether this run beats the local best, and reset
+    // the submit button/message for a fresh run
+    rankNameInput.value = loadSavedRankName();
+    rankSubmitMsg.textContent = '';
+    lastSubmittedTs = null;
+    const localBest = loadLocalRanking();
+    const bestDistance = localBest.length ? localBest[0].distance : 0;
+    const finalDistance = Math.floor(distance);
+    rankResultMsg.textContent = (finalDistance > bestDistance) ? '🎉 自己ベスト更新!' : '';
+  }
+
+  // ---------- PAUSE / QUIT ----------
+  let isPaused = false;
+  const pauseOverlay = document.getElementById('pauseOverlay');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const quitBtn = document.getElementById('quitBtn');
+  const resumeBtn = document.getElementById('resumeBtn');
+  const pauseQuitBtn = document.getElementById('pauseQuitBtn');
+
+  function pauseGame(){
+    if(state !== 'playing' || isPaused) return;
+    isPaused = true;
+    pauseOverlay.style.display = 'flex';
+    stopBGM();
+  }
+  function resumeGame(){
+    if(state !== 'playing' || !isPaused) return;
+    isPaused = false;
+    pauseOverlay.style.display = 'none';
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+    startBGM();
+  }
+  function togglePause(){
+    if(state !== 'playing') return;
+    if(isPaused) resumeGame(); else pauseGame();
+  }
+  function quitToTitle(){
+    state = 'idle';
+    isPaused = false;
+    pauseOverlay.style.display = 'none';
+    gameOverOverlay.style.display = 'none';
+    startOverlay.style.display = 'flex';
+    stopBGM();
+  }
+
+  pauseBtn.addEventListener('click', togglePause);
+  resumeBtn.addEventListener('click', resumeGame);
+  quitBtn.addEventListener('click', quitToTitle);
+  pauseQuitBtn.addEventListener('click', quitToTitle);
+
+  // ---------- INPUT ----------
+  function moveLane(dir){
+    if(state !== 'playing' || isPaused) return;
+    player.targetLane = Math.max(0, Math.min(LANES-1, player.targetLane + dir));
+  }
+
+  // Drop a held bomb: wipes every enemy currently on screen in one shot. Gated by both a
+  // stock check AND a cooldown timer, so even a key held down, a mashed button, or a string
+  // of rapid double-taps can only trigger one detonation at a time - never a dynamite "machine
+  // gun" chaining through the whole stock in an instant.
+  function useBomb(){
+    if(state !== 'playing' || isPaused) return;
+    if(!player.bombs || player.bombs <= 0) return;
+    if(bombCooldown > 0) return;
+    player.bombs--;
+    bombCooldown = BOMB_COOLDOWN_TIME;
+    updateBombHud();
+    let killed = 0;
+    for(const it of items){
+      if(it.dead) continue;
+      if(it.type==='drone'){
+        it.dead = true;
+        killed++;
+        const cellW = laneW/DRONE_COLS;
+        const flatX = laneW + (it.col+0.5)*cellW;
+        spawnParticles(vanishX + (flatX-vanishX), playerRowY, '#ff6a3d', 4);
+      } else if(it.type==='bossUnit' && it.hp > 0){
+        it.hp = 0;
+        it.bossDefeated = true;
+        it.dead = true;
+        killed++;
+        const heal = Math.round(it.maxHp*0.22);
+        player.energy = Math.min(player.maxEnergy, player.energy+heal);
+        updateLifeBar();
+        const p = project(it.d);
+        spawnFloatText('LIFE +'+heal, screenX(1,p.scale), p.y-20, '#34e089');
+        spawnParticles(screenX(1,p.scale), p.y, '#34e089', 20);
+      }
+    }
+    spawnFloatText('BOMB!', vanishX, H*0.42, '#ff6a3d');
+    spawnParticles(vanishX, H*0.55, '#ffd23f', 40);
+    spawnParticles(vanishX, H*0.4, '#ff6a3d', 40);
+    shakeT = Math.max(shakeT, 0.5);
+    playExplosion();
+  }
+
+  window.addEventListener('keydown', (e)=>{
+    // modals take priority: Esc closes them instead of quitting the game
+    if(devPasscodeModal.style.display === 'flex'){
+      if(e.key === 'Escape') closeDevPasscode();
+      return;
+    }
+    if(devPanelModal.style.display === 'flex'){
+      if(e.key === 'Escape') closeDevPanel();
+      return;
+    }
+    if(e.key === 'ArrowLeft' || e.key.toLowerCase()==='a') moveLane(-1);
+    if(e.key === 'ArrowRight' || e.key.toLowerCase()==='d') moveLane(1);
+    if(e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key.toLowerCase()==='s') useBomb();
+    if(e.key === ' ') { if(state!=='playing') startGame(); }
+    if(e.key.toLowerCase() === 'p') togglePause();
+    if(e.key === 'Escape') quitToTitle();
+  });
+
+  // a quick tap switches lane (left/right half of the screen); a quick upward swipe drops a
+  // bomb instead - decided on release so a swipe never also triggers a lane-switch tap.
+  const SWIPE_UP_MIN_DIST = 45;   // px of upward movement required to count as a swipe
+  const SWIPE_MAX_HORIZ = 60;     // swipes that drift too far sideways are ignored (treated as a drag)
+  const SWIPE_MAX_MS = 600;       // must happen within this time to count as a swipe, not a slow drag
+  const TAP_MAX_DIST = 12;        // movement under this counts as a plain tap (lane switch)
+  let touchStartX = 0, touchStartY = 0, touchStartTime = 0, touchActive = false;
+  canvas.addEventListener('pointerdown', (e)=>{
+    ensureAudio();
+    touchActive = true;
+    touchStartX = e.clientX;
+    touchStartY = e.clientY;
+    touchStartTime = performance.now();
+  });
+  canvas.addEventListener('pointerup', (e)=>{
+    if(!touchActive) return;
+    touchActive = false;
+    const dx = e.clientX - touchStartX;
+    const dy = e.clientY - touchStartY;
+    const dt = performance.now() - touchStartTime;
+    const upDist = -dy; // positive = moved upward
+    if(upDist >= SWIPE_UP_MIN_DIST && Math.abs(dx) <= SWIPE_MAX_HORIZ && dt <= SWIPE_MAX_MS){
+      useBomb();
+      return;
+    }
+    if(Math.abs(dx) <= TAP_MAX_DIST && Math.abs(dy) <= TAP_MAX_DIST){
+      const rect = canvas.getBoundingClientRect();
+      const px = (touchStartX - rect.left) / rect.width * W;
+      if(px < W/2) moveLane(-1); else moveLane(1);
+    }
+  });
+  canvas.addEventListener('pointercancel', ()=>{ touchActive = false; });
+
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('retryBtn').addEventListener('click', startGame);
+
+  // ---------- SPAWNING ----------
+  // left lane (0): mostly +1 plates. right lane (2): mostly +99 plates (rarer, more valuable).
+  const SPAWN_D_PLATE = 1150;
+  const SPAWN_D_CENTER = 1350;
+
+  function plateColor(value){
+    if(value>=5000) return '#b06bff';
+    if(value>=1000) return '#ff2d55';
+    if(value>=300) return '#ff4de0';
+    if(value>=99) return '#ffd23f';
+    if(value>=20) return '#ff9f4a';
+    return '#3fa9ff';
+  }
+  function spawnSidePlates(){
+    const r = Math.random();
+    // mix in "300"/"1000"/"5000" jackpot plates alongside the usual 99/25/5 values. Their
+    // shares are tunable in dev mode (devSettings.plate300Pct / plate1000Pct / plate5000Pct);
+    // "5000" only joins the mix once the scroll speed has ramped up past devSettings.plate5000SpeedThreshold
+    // (a multiple of baseSpeed). The 99/25/5 tiers keep their relative weights (55:18:17) and
+    // share whatever probability is left over. If the jackpot shares alone add up to 100% or
+    // more, scale them down so they never exceed the whole range (leaving 0% for 99/25/5 in that case).
+    let p300 = Math.max(0, Math.min(1, devSettings.plate300Pct/100));
+    let p1000 = Math.max(0, Math.min(1, devSettings.plate1000Pct/100));
+    const speedRatioNow = speed / Math.max(1, baseSpeed);
+    const p5000 = (speedRatioNow >= devSettings.plate5000SpeedThreshold) ? Math.max(0, Math.min(1, devSettings.plate5000Pct/100)) : 0;
+    let pJackpot = p300 + p1000 + p5000;
+    if(pJackpot > 1){
+      const scale = 1/pJackpot;
+      p300 *= scale; p1000 *= scale;
+    }
+    const p5000Final = (pJackpot > 1) ? p5000/pJackpot : p5000;
+    const rest = Math.max(0, 1 - p300 - p1000 - p5000Final);
+    const c99 = rest * (55/90);
+    const c25 = rest * (73/90);
+    const c5 = rest;
+    const c300 = rest + p300;
+    const c1000 = c300 + p1000;
+    const bigVal = r < c99 ? 99 : (r < c25 ? 25 : (r < c5 ? 5 : (r < c300 ? 300 : (r < c1000 ? 1000 : 5000))));
+    // randomly decide which side gets the "1" and which gets the big value
+    const bigOnLeft = Math.random() < 0.5;
+    const laneSmall = bigOnLeft ? 2 : 0;
+    const laneBig = bigOnLeft ? 0 : 2;
+    // a bonus bomb occasionally takes the place of the "1" plate (devSettings.bombPct, independent
+    // of the 99/300/1000 roll above) - picking it up stocks a bomb the player can drop later.
+    if(Math.random() < Math.max(0, devSettings.bombPct)/100){
+      items.push({type:'bombPlate', lane:laneSmall, d:SPAWN_D_PLATE, baseH:40, dead:false});
+    } else {
+      items.push({type:'plate', lane:laneSmall, d:SPAWN_D_PLATE, baseH:40, value:1, dead:false});
+    }
+    items.push({type:'plate', lane:laneBig, d:SPAWN_D_PLATE, baseH:40, value: bigVal, dead:false});
+  }
+
+  const SPAWN_D_SPIKE = 1150;
+  const SPIKE_PENALTY_PCT = 0.10; // 10% of COUNT lost if not avoided
+
+  function spawnSpikeTrap(){
+    const lane = Math.floor(Math.random()*LANES);
+    items.push({type:'spike', lane, d:SPAWN_D_SPIKE, baseH:34, dead:false});
+  }
+
+  function spawnCenterObstacle(){
+    // toothpaste or a rare standalone boss (fry are now spawned continuously, see spawnDroneRow)
+    const roll = Math.random();
+    if(roll < 0.8){
+      const diffScale = 1 + elapsed/35;
+      const small = Math.random() < 0.5;
+      const capacity = Math.round((small? 10+Math.random()*8 : 22+Math.random()*14) * diffScale);
+      const reinforcement = Math.round((small? 15+Math.random()*20 : 60+Math.random()*90) * diffScale);
+      items.push({
+        type:'toothpaste', lane:1, d:SPAWN_D_CENTER, baseH:64,
+        capacity: Math.max(4,Math.round(capacity)),
+        maxCapacity: Math.max(4,Math.round(capacity)),
+        reinforcement: Math.max(5,reinforcement),
+        dead:false, popped:false, popT:0, liftY:0, popAlpha:1
+      });
+    } else {
+      // big boss marching along, embedded among the continuous fry stream
+      const bDiff = 1 + elapsed/80;
+      const bossHp = Math.max(55, Math.round((70 + elapsed*1.6) * bDiff * (0.85+Math.random()*0.3)));
+      items.push({
+        type:'bossUnit', lane:1, d:SPAWN_D_CENTER+80,
+        hp:bossHp, maxHp:bossHp, bossDefeated:false, dead:false, passedPlayer:false
+      });
+    }
+  }
+
+  // continuous fry stream: a steady column of 1-hit-kill foot-soldiers always filling the
+  // center lane, so each bullet removes exactly one unit (no block-wide HP, no instant wipe).
+  const DRONE_COLS = 6;
+  const ROW_DEPTH_SPACING = 15; // depth units between consecutive rows - tuned so spheres touch near the player
+
+  function spawnDroneRow(d){
+    if(d===undefined) d = SPAWN_D_CENTER;
+    for(let col=0; col<DRONE_COLS; col++){
+      items.push({type:'drone', lane:1, col, d, dead:false});
+    }
+  }
+
+  // ---------- UPDATE ----------
+  let lastTime = 0;
+  let fireTimer = 0;
+  function loop(now){
+    if(state !== 'playing' || isPaused){ return; }
+    const dt = Math.min(0.033, (now-lastTime)/1000);
+    lastTime = now;
+    update(dt);
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  const BULLET_SPEED = 2500; // depth units / sec, travels away from player into the scene
+
+  function update(dt){
+    elapsed += dt;
+    if(bombCooldown > 0) bombCooldown -= dt;
+    // Speed ramps in steps: every SPEED_MILESTONE_M meters traveled, multiply by devSettings.speedCoef.
+    // Default coef 1.0 = flat speed (dev mode can tune both the start speed % and this growth).
+    const milestones = Math.floor(distance / SPEED_MILESTONE_M);
+    speed = baseSpeed * Math.pow(devSettings.speedCoef, milestones);
+    // Hard cap: distance (which drives milestones) grows faster the faster speed already is,
+    // so with speedCoef > 1 this is a runaway feedback loop - speed compounds speed, and left
+    // unbounded it blows up to extreme values that make per-frame movement too large for
+    // collisions and rendering to track sanely (items visibly "teleport"/skip past the player
+    // instead of sliding in). Capping speed at a tunable multiple of baseSpeed keeps the game
+    // playable indefinitely instead of degenerating at high speed.
+    speed = Math.min(speed, baseSpeed*devSettings.maxSpeedMul);
+    distance += speed*dt/220;
+    // Once scroll speed has hit that hard cap, difficulty keeps climbing a different way instead:
+    // the center lane's enemy column gets denser (more rows stacked per depth-slot), growing by
+    // devSettings.rowDensityGrowthPct for every SPEED_MILESTONE_M traveled past the point where
+    // speed capped out. Capped itself (ROW_DENSITY_MAX_MUL) for the same reason speed itself is
+    // capped - unbounded compounding growth eventually breaks rendering/collision fidelity.
+    const ROW_DENSITY_MAX_MUL = 6;
+    let rowDensityMul = 1;
+    if(devSettings.speedCoef > 1){
+      const cappedMilestone = Math.ceil(Math.log(devSettings.maxSpeedMul) / Math.log(devSettings.speedCoef));
+      const excessMilestones = Math.max(0, milestones - cappedMilestone);
+      rowDensityMul = Math.pow(1 + devSettings.rowDensityGrowthPct/100, excessMilestones);
+    }
+    rowDensityMul = Math.min(rowDensityMul, ROW_DENSITY_MAX_MUL);
+
+    player.lane += (player.targetLane - player.lane) * Math.min(1, dt*14);
+
+    // fire bullets only in current lane; damage scales with crowd size
+    fireTimer -= dt;
+    // devSettings.killRateMul tunes how fast enemies are "killed" (fire rate) relative to
+    // devSettings.centerSlowPct's advance speed - raise it to make the swarm die off faster
+    // per shot/sec, lower it to let the swarm advance faster than it's thinned out.
+    const fireRate = Math.max(0.02, (0.13 - player.count*0.0009) / Math.max(0.0001, devSettings.killRateMul));
+    // bullet power (damage dealt to toothpaste/boss per bullet) scales with COUNT divided by
+    // devSettings.bulletDamageDiv - a bigger divisor means weaker bullets, tunable in dev mode.
+    // On top of that, devSettings.dmgGrowthCoef compounds bullet power on the SAME milestone
+    // cadence (every SPEED_MILESTONE_M meters) that speedCoef compounds scroll speed, so power
+    // can be tuned to keep pace with (or fall behind/ahead of) how fast the game speeds up.
+    const dmgGrowth = Math.pow(devSettings.dmgGrowthCoef, milestones);
+    const dmg = Math.max(1, Math.floor((player.count/devSettings.bulletDamageDiv) * dmgGrowth));
+    // multishot: COUNT past a threshold fires extra bullets per shot (not just faster shots),
+    // capped at DRONE_COLS since a center-lane row only has that many columns to hit anyway.
+    const MULTISHOT_PER_COUNT = 40;
+    const shotCount = Math.max(1, Math.min(DRONE_COLS, 1 + Math.floor(player.count/MULTISHOT_PER_COUNT)));
+    if(fireTimer <= 0){
+      fireTimer = Math.max(0.02, fireRate);
+      const lane = Math.round(player.lane);
+      for(let i=0; i<shotCount; i++){
+        bullets.push({d:0, lane, dmg, weaveSeed: Math.random()*Math.PI*2});
+      }
+      playShot();
+    }
+    bullets.forEach(b=> b.d += BULLET_SPEED*dt);
+    bullets = bullets.filter(b=> b.d < SPAWN_D_CENTER+250);
+
+    // spawn
+    spawnTimerSide -= dt;
+    if(spawnTimerSide <= 0){
+      spawnSidePlates();
+      spawnTimerSide = 0.62 + Math.random()*0.25 - Math.min(0.3, elapsed*0.004);
+      spawnTimerSide = Math.max(0.3, spawnTimerSide);
+    }
+    spawnTimerCenter -= dt;
+    if(spawnTimerCenter <= 0){
+      spawnCenterObstacle();
+      spawnTimerCenter = 2.6 + Math.random()*1.4 - Math.min(1.0, elapsed*0.016);
+      spawnTimerCenter = Math.max(1.8, spawnTimerCenter);
+    }
+    spawnTimerSpike -= dt;
+    if(spawnTimerSpike <= 0){
+      spawnSpikeTrap();
+      spawnTimerSpike = 4.5 + Math.random()*2.5 - Math.min(2.0, elapsed*0.02);
+      spawnTimerSpike = Math.max(2.2, spawnTimerSpike);
+    }
+
+    // Center lane (1) moves slower than the side lanes by devSettings.centerSlowPct (default 70%).
+    const centerMul = 1 - (devSettings.centerSlowPct/100);
+    const centerSpeed = speed*1.15*centerMul;
+
+    // continuous drone rows: spacing is timed from the CURRENT center-lane speed so rows
+    // stay contiguous (no gaps) however fast or slow the lane is currently moving. Once the
+    // scroll speed has ramped up a fair amount (speedCoef compounding over distance), a
+    // recurring BREAK of consecutive rows opens up in the otherwise unbroken wall of enemies -
+    // not one skipped row every N rows, but N skipped rows in a row. The break's length (and
+    // so the proportion of rows that are gaps) grows further the more speed has ramped up,
+    // at a rate set by devSettings.gapGrowthRate, so gaps get both more frequent-feeling and
+    // longer as the run speeds up, not just a fixed ratio forever.
+    const ROW_GAP_CYCLE_ROWS = 120; // normal rows spawned between the start of each break
+    const ROW_GAP_SPEED_THRESHOLD = 1.3; // gaps only start once speed is this many times baseSpeed
+    const ROW_GAP_MAX_RATIO = 0.85; // hard cap: at most this fraction of rows can ever be a gap,
+                                     // so enemies can never fully stop appearing no matter how
+                                     // far speed/gapGrowthRate have compounded (the growth is
+                                     // otherwise unbounded, since speed itself compounds exponentially)
+    spawnTimerDrone -= dt;
+    if(spawnTimerDrone <= 0){
+      droneRowCounter++;
+      const speedRatio = speed / Math.max(1, baseSpeed);
+      const speedRampedUp = speedRatio >= ROW_GAP_SPEED_THRESHOLD;
+      const extraSpeedRatio = Math.max(0, speedRatio - ROW_GAP_SPEED_THRESHOLD);
+      let effectiveGapLen = Math.max(1, Math.round(devSettings.rowGapEvery * (1 + devSettings.gapGrowthRate*extraSpeedRatio)));
+      const maxGapLen = Math.floor(ROW_GAP_CYCLE_ROWS * ROW_GAP_MAX_RATIO / (1-ROW_GAP_MAX_RATIO));
+      effectiveGapLen = Math.min(effectiveGapLen, maxGapLen);
+      const cycleLen = ROW_GAP_CYCLE_ROWS + effectiveGapLen;
+      const posInCycle = droneRowCounter % cycleLen;
+      const isGapRow = speedRampedUp && posInCycle > ROW_GAP_CYCLE_ROWS - 1;
+      if(!isGapRow){
+        // instead of just one row, pack in rowDensityMul rows stacked within this same depth
+        // slot (so the column gets thicker without changing how fast it's all moving)
+        const rowsToSpawn = Math.max(1, Math.round(rowDensityMul));
+        for(let i=0; i<rowsToSpawn; i++){
+          spawnDroneRow(SPAWN_D_CENTER + i*(ROW_DEPTH_SPACING/rowsToSpawn));
+        }
+      }
+      // rows now also accelerate/decelerate by depth (see depthSpeedMul), so time the spacing
+      // using the actual speed a row has right as it's created (at SPAWN_D_CENTER) to keep
+      // freshly spawned rows touching with no gap, same as before.
+      spawnTimerDrone = ROW_DEPTH_SPACING / Math.max(1, centerSpeed*depthSpeedMul(SPAWN_D_CENTER));
+    }
+
+    // move items closer to the player (depth decreases). A popped toothpaste is launching
+    // into the air instead - freeze its depth and animate it separately below.
+    items.forEach(it=>{
+      if(it.type==='toothpaste' && it.popped) return;
+      const laneMul = (it.lane===1) ? centerMul : 1;
+      it.d -= speed*dt*1.15*laneMul*depthSpeedMul(it.d);
+    });
+
+    // popped toothpaste tubes fly up and fade out rather than continuing to travel the lane.
+    const TOOTHPASTE_POP_DURATION = 0.7;
+    for(const it of items){
+      if(it.type==='toothpaste' && it.popped && !it.dead){
+        it.popT += dt;
+        const t = Math.min(1, it.popT/TOOTHPASTE_POP_DURATION);
+        it.liftY = 160*t*t; // accelerating upward (screen y decreases = up, so this is subtracted at render)
+        it.popAlpha = Math.max(0, 1 - t);
+        if(it.popT >= TOOTHPASTE_POP_DURATION) it.dead = true;
+      }
+    }
+
+    // bullets vs lane items
+    for(const it of items){
+      if(it.dead) continue;
+      if(it.type==='plate'){
+        for(const b of bullets){
+          if(b.d<0 || b.lane!==it.lane) continue;
+          if(b.d >= it.d){
+            it.dead = true;
+            player.count += it.value;
+            maxCount = Math.max(maxCount, player.count);
+            const p = project(it.d);
+            spawnFloatText('+'+it.value, screenX(it.lane,p.scale), p.y, plateColor(it.value));
+            spawnParticles(screenX(it.lane,p.scale), p.y, plateColor(it.value));
+            playPop(it.value>=1000?980:(it.value>=300?850:(it.value>=99?700:420)));
+            b.d = -999;
+            break;
+          }
+        }
+      } else if(it.type==='bombPlate'){
+        for(const b of bullets){
+          if(b.d<0 || b.lane!==it.lane) continue;
+          if(b.d >= it.d){
+            it.dead = true;
+            player.bombs = (player.bombs||0) + 1;
+            updateBombHud();
+            const p = project(it.d);
+            spawnFloatText('🍍+1', screenX(it.lane,p.scale), p.y, '#ffd23f');
+            spawnParticles(screenX(it.lane,p.scale), p.y, '#ffd23f');
+            playPop(600);
+            b.d = -999;
+            break;
+          }
+        }
+      } else if(it.type==='toothpaste'){
+        for(const b of bullets){
+          if(b.d<0 || b.lane!==1 || it.popped || it.capacity<=0) continue;
+          if(b.d >= it.d){
+            it.capacity -= b.dmg;
+            b.d = -999;
+            const p = project(it.d);
+            spawnParticles(screenX(1,p.scale), p.y, '#ffffff', 3);
+            if(it.capacity<=0){
+              it.popped = true;
+              player.count += it.reinforcement;
+              maxCount = Math.max(maxCount, player.count);
+              spawnFloatText('+'+it.reinforcement, screenX(1,p.scale), p.y-14, '#bda8ff');
+              spawnParticles(screenX(1,p.scale), p.y, '#bda8ff', 22);
+              playPop(900);
+            }
+          }
+        }
+      } else if(it.type==='bossUnit'){
+        for(const b of bullets){
+          if(b.d<0 || b.lane!==1 || it.hp<=0) continue;
+          if(b.d >= it.d){
+            it.hp -= b.dmg;
+            b.d = -999;
+            if(Math.random()<0.1) playHit();
+            if(it.hp<=0 && !it.bossDefeated){
+              it.bossDefeated = true;
+              it.dead = true; // shot down - explodes and disappears right away, doesn't linger/pass through
+              const heal = Math.round(it.maxHp*0.22);
+              player.energy = Math.min(player.maxEnergy, player.energy+heal);
+              updateLifeBar();
+              const p = project(it.d);
+              spawnFloatText('LIFE +'+heal, screenX(1,p.scale), p.y-20, '#34e089');
+              spawnParticles(screenX(1,p.scale), p.y, '#ff8a2a', 18);
+              spawnParticles(screenX(1,p.scale), p.y, '#ffd23f', 18);
+              spawnParticles(screenX(1,p.scale), p.y, '#34e089', 14);
+              shakeT = Math.max(shakeT, 0.3);
+              playExplosion();
+            }
+          }
+        }
+      }
+    }
+    // bullets vs drones: exactly one bullet removes exactly one drone - no damage scaling,
+    // no instant wipes. Pick the row the bullet has just reached, then whichever column in
+    // that row sits closest to the bullet's current weaved position, so it visually looks
+    // like the bullet's own path is what picked off that enemy.
+    for(const b of bullets){
+      if(b.d<0 || b.lane!==1) continue;
+      let targetD = Infinity;
+      for(const it of items){ if(it.type==='drone' && !it.dead && it.d<=b.d && it.d<targetD) targetD = it.d; }
+      if(targetD===Infinity) continue;
+      const bx = bulletFlatX(b);
+      let best=null, bestDist=Infinity;
+      for(const it of items){
+        if(it.type==='drone' && !it.dead && it.d===targetD){
+          const colX = laneW + (it.col+0.5)*(laneW/DRONE_COLS);
+          const dx = Math.abs(colX - bx);
+          if(dx<bestDist){ bestDist=dx; best=it; }
+        }
+      }
+      if(best){ best.dead = true; b.d = -999; }
+    }
+    bullets = bullets.filter(b=> b.d > -500);
+
+    // reach player (depth hits 0)
+    const droneCollisions = [];
+    for(const it of items){
+      if(it.dead) continue;
+      if(it.type==='plate'){
+        if(it.d <= -40) it.dead = true;
+      } else if(it.type==='bombPlate'){
+        if(it.d <= -40) it.dead = true; // passes by harmlessly if missed
+      } else if(it.type==='spike'){
+        if(it.d <= 0){
+          it.dead = true;
+          if(Math.round(player.lane) === it.lane){
+            const before = player.count;
+            player.count = Math.max(1, Math.round(player.count * (1-SPIKE_PENALTY_PCT)));
+            const lost = before - player.count;
+            const cx = screenX(it.lane,1);
+            spawnFloatText('-'+Math.round(SPIKE_PENALTY_PCT*100)+'%', cx, playerRowY-40, '#ff8a5c');
+            spawnParticles(cx, playerRowY, '#ff8a5c', 16);
+            shakeT = 0.2;
+            playHit();
+          }
+        }
+      } else if(it.type==='toothpaste'){
+        if(!it.popped && it.d <= 0) it.dead = true; // passes by harmlessly if not emptied in time
+      } else if(it.type==='drone'){
+        if(it.d <= 0){
+          it.dead = true;
+          droneCollisions.push(it); // handled as one batch crash below, not per-unit
+        }
+      } else if(it.type==='bossUnit'){
+        // a still-alive boss doesn't disappear on contact - it barrels through and keeps
+        // going, draining life once as it passes (not every frame while overlapping the
+        // player). A defeated boss never reaches here - it already exploded and was
+        // removed the moment its HP hit zero (see the bullet-collision pass above).
+        if(it.d <= 0 && !it.passedPlayer){
+          it.passedPlayer = true;
+          const loss = Math.min(player.maxEnergy, Math.round(it.hp * 0.45));
+          player.energy = Math.max(0, player.energy-loss);
+          updateLifeBar();
+          spawnFloatText('-'+loss, screenX(1,1), playerRowY-40, '#ff4d5e');
+          spawnParticles(screenX(1,1), playerRowY, '#ff4d5e', 30);
+          shakeT = 0.4;
+          playHit();
+          if(player.energy <= 0){
+            player.energy = 0;
+            updateLifeBar();
+            endGame();
+          }
+        }
+        if(it.d <= -220) it.dead = true; // despawn once it's well behind the player
+      }
+    }
+    // player crashes into the front of the drone formation: treat everyone who reached the
+    // player this frame as one collision - life drops once (scaled to how many hit at once)
+    // and that same batch of enemies vanishes together, so the hit and the loss read as one event.
+    // devSettings.collisionRows controls how many depth-rows deep that single crash reaches:
+    // beyond the front row that actually touched d<=0, pull in the next N-1 closest rows too.
+    if(droneCollisions.length && devSettings.collisionRows > 1){
+      const extraRowsNeeded = devSettings.collisionRows - 1;
+      const liveDrones = items.filter(it=> it.type==='drone' && !it.dead);
+      const rowDs = [...new Set(liveDrones.map(it=>it.d))].sort((a,b)=>a-b);
+      const targetRowDs = new Set(rowDs.slice(0, extraRowsNeeded));
+      for(const it of liveDrones){
+        if(targetRowDs.has(it.d)){
+          it.dead = true;
+          droneCollisions.push(it);
+        }
+      }
+    }
+    if(droneCollisions.length){
+      const loss = Math.min(16, 1.4 * droneCollisions.length);
+      player.energy = Math.max(0, player.energy-loss);
+      updateLifeBar();
+      spawnFloatText('-'+Math.round(loss*10)/10, vanishX, playerRowY-34, '#ff4d5e');
+      for(const it of droneCollisions){
+        const cx = laneW + (it.col+0.5)*(laneW/DRONE_COLS); // at the player row, scale==1
+        spawnParticles(cx, playerRowY, '#ff4d5e', 6);
+      }
+      shakeT = Math.max(shakeT, 0.15);
+      playHit();
+      if(player.energy <= 0){
+        player.energy = 0;
+        updateLifeBar();
+        endGame();
+      }
+    }
+    items = items.filter(it=> !it.dead);
+
+    particles.forEach(p=>{ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=400*dt; p.life-=dt; });
+    particles = particles.filter(p=>p.life>0);
+    floatTexts.forEach(f=>{ f.y -= 40*dt; f.life -= dt; });
+    floatTexts = floatTexts.filter(f=>f.life>0);
+
+    if(shakeT>0) shakeT -= dt;
+
+    countValEl.textContent = player.count;
+    scoreValEl.textContent = Math.floor(distance);
+  }
+
+  function spawnFloatText(text,x,y,color){
+    floatTexts.push({text,x,y,color,life:0.9});
+  }
+  function spawnParticles(x,y,color,n){
+    n = n || 14;
+    for(let i=0;i<n;i++){
+      particles.push({
+        x,y,
+        vx:(Math.random()-0.5)*260,
+        vy:(Math.random()-0.9)*260,
+        life:0.5+Math.random()*0.3,
+        color
+      });
+    }
+  }
+
+  // ---------- RENDER ----------
+  function render(){
+    ctx.save();
+    if(shakeT>0){
+      const m = shakeT*18;
+      ctx.translate((Math.random()-0.5)*m,(Math.random()-0.5)*m);
+    }
+    ctx.clearRect(-30,-30,W+60,H+60);
+
+    // sky above the horizon
+    const sky = ctx.createLinearGradient(0,0,0,horizonY);
+    sky.addColorStop(0,'#1c2048');
+    sky.addColorStop(1,'#2a2f5c');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0,0,W,horizonY);
+
+    // road: a trapezoid converging to the vanishing point on the horizon
+    const roadGrad = ctx.createLinearGradient(0,horizonY,0,H);
+    roadGrad.addColorStop(0,'#232852');
+    roadGrad.addColorStop(1,'#11142a');
+    ctx.fillStyle = roadGrad;
+    ctx.beginPath();
+    ctx.moveTo(vanishX-6,horizonY);
+    ctx.lineTo(vanishX+6,horizonY);
+    ctx.lineTo(W,H);
+    ctx.lineTo(0,H);
+    ctx.closePath();
+    ctx.fill();
+
+    // lane tint (left blue-ish, right yellow-ish)
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(vanishX-6,horizonY); ctx.lineTo(vanishX+6,horizonY); ctx.lineTo(W,H); ctx.lineTo(0,H);
+    ctx.closePath(); ctx.clip();
+    ctx.fillStyle='rgba(63,169,255,0.07)';
+    ctx.beginPath(); ctx.moveTo(vanishX,horizonY); ctx.lineTo(0,H); ctx.lineTo(laneW,H); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='rgba(255,210,63,0.07)';
+    ctx.beginPath(); ctx.moveTo(vanishX,horizonY); ctx.lineTo(laneW*2,H); ctx.lineTo(W,H); ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    // lane divider lines, with scrolling dashes for a sense of forward motion
+    roadScroll = (roadScroll + speed*0.02) % 40;
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    for(let i=1;i<LANES;i++){
+      ctx.lineWidth = 3;
+      ctx.setLineDash([16,14]);
+      ctx.lineDashOffset = -roadScroll;
+      ctx.beginPath();
+      ctx.moveTo(vanishX,horizonY);
+      ctx.lineTo(i*laneW,H);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // outer edges
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.beginPath(); ctx.moveTo(vanishX-6,horizonY); ctx.lineTo(0,H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(vanishX+6,horizonY); ctx.lineTo(W,H); ctx.stroke();
+
+    // draw items far-to-near so closer ones overlap farther ones
+    const drawList = items.slice().sort((a,b)=> b.d-a.d);
+
+    drawList.forEach(it=>{
+      const p = project(it.d);
+      const s = p.scale, y = p.y;
+      if(it.type==='plate'){
+        const cx = screenX(it.lane,s);
+        const w0 = (laneW-16)*s, h0 = it.baseH*s;
+        const col = plateColor(it.value);
+        ctx.fillStyle = col;
+        roundRect(ctx,cx-w0/2,y-h0/2,w0,h0,8*s); ctx.fill();
+        ctx.fillStyle='#10131f';
+        ctx.font='bold '+Math.max(9,18*s)+'px Segoe UI';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('+'+it.value, cx, y+1*s);
+      } else if(it.type==='bombPlate'){
+        // taller than a normal plate (stands out as a special pickup) but capped to the lane's
+        // own width so it never bleeds into neighboring lanes
+        const BOMB_HEIGHT_SCALE = 4;
+        const cx = screenX(it.lane,s);
+        const w0 = (laneW-16)*s, h0 = it.baseH*s*BOMB_HEIGHT_SCALE;
+        ctx.fillStyle = '#4a3a10';
+        roundRect(ctx,cx-w0/2,y-h0/2,w0,h0,8*s); ctx.fill();
+        ctx.strokeStyle = '#ffd23f';
+        ctx.lineWidth = Math.max(1, 2*s);
+        roundRect(ctx,cx-w0/2,y-h0/2,w0,h0,8*s); ctx.stroke();
+        ctx.font = 'bold '+Math.max(10,26*s)+'px Segoe UI';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('🍍', cx, y+1*s);
+      } else if(it.type==='spike'){
+        const cx = screenX(it.lane,s);
+        const w0 = (laneW-14)*s, h0 = it.baseH*s;
+        // warning floor stripe
+        ctx.fillStyle = '#3a2410';
+        roundRect(ctx,cx-w0/2,y-h0*0.35,w0,h0*0.7,4*s); ctx.fill();
+        // spikes
+        const n = 6;
+        const sw = w0/n;
+        ctx.fillStyle = '#d8d8e0';
+        for(let i=0;i<n;i++){
+          const bx = cx-w0/2+i*sw;
+          ctx.beginPath();
+          ctx.moveTo(bx, y+h0*0.35);
+          ctx.lineTo(bx+sw/2, y-h0*0.55);
+          ctx.lineTo(bx+sw, y+h0*0.35);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.strokeStyle='#ff8a5c';
+        ctx.lineWidth=Math.max(1,2*s);
+        ctx.strokeRect(cx-w0/2,y-h0*0.35,w0,h0*0.7);
+      } else if(it.type==='toothpaste'){
+        // narrower + translucent so it doesn't wall off the view of what's behind it in the
+        // center lane (the drone stream / boss used to be fully hidden behind these panels).
+        // Once cleared (popped), it launches straight up and fades out instead of continuing
+        // to travel down the lane like an unpicked one.
+        const cx = screenX(1,s);
+        const w0 = (laneW*0.52)*s, h0 = it.baseH*s;
+        const pct = it.capacity/it.maxCapacity;
+        const ry = y - (it.popped ? it.liftY*s : 0);
+        const outerAlpha = it.popped ? it.popAlpha : 1;
+        ctx.save();
+        ctx.globalAlpha = 0.72*outerAlpha;
+        ctx.fillStyle = '#d8d8e8';
+        roundRect(ctx,cx-w0/2,ry-h0/2,w0,h0,10*s); ctx.fill();
+        ctx.fillStyle = '#bda8ff';
+        roundRect(ctx,cx-w0/2+3*s,ry-h0/2+3*s,(w0-6*s)*Math.max(0,pct),h0-6*s,6*s); ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.globalAlpha = outerAlpha;
+        ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+        ctx.lineWidth = Math.max(1, 1.4*s);
+        roundRect(ctx,cx-w0/2,ry-h0/2,w0,h0,10*s); ctx.stroke();
+        ctx.fillStyle='#8f8fae';
+        ctx.fillRect(cx-7*s,ry-h0/2-9*s,14*s,10*s);
+        ctx.fillStyle='#10131f';
+        ctx.font='bold '+Math.max(9,15*s)+'px Segoe UI';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(it.capacity, cx, ry+6*s);
+        ctx.font='bold '+Math.max(8,12*s)+'px Segoe UI';
+        ctx.fillStyle='#bda8ff';
+        ctx.fillText('援軍+'+it.reinforcement, cx, ry-h0/2-14*s);
+        ctx.restore();
+      } else if(it.type==='drone'){
+        // one small sphere per unit; the continuous stream of these fills the center lane
+        const cellW = laneW/DRONE_COLS;
+        const flatX = laneW + (it.col+0.5)*cellW;
+        const cx = vanishX + (flatX - vanishX)*s;
+        const r = Math.max(1.5, (cellW/2)*s);
+        const grad = ctx.createRadialGradient(cx-r*0.35,y-r*0.35,r*0.15,cx,y,r);
+        grad.addColorStop(0,'#ff8a8a');
+        grad.addColorStop(0.55,'#ff4d5e');
+        grad.addColorStop(1,'#b01f30');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx,y,r,0,Math.PI*2);
+        ctx.fill();
+      } else if(it.type==='bossUnit'){
+        const cx = screenX(1,s);
+        const br = Math.max(4, (laneW/3)*s);
+        const pct = it.hp/it.maxHp;
+        ctx.save();
+        ctx.shadowColor='rgba(255,77,94,0.7)';
+        ctx.shadowBlur=14*s;
+        ctx.beginPath();
+        ctx.arc(cx,y,br,0,Math.PI*2);
+        ctx.fillStyle = '#2a0a12';
+        ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx,y,br,0,Math.PI*2);
+        ctx.clip();
+        const grad = ctx.createRadialGradient(cx-br*0.35,y-br*0.35,br*0.15,cx,y,br);
+        grad.addColorStop(0,'#ffb199');
+        grad.addColorStop(0.5,'#c23a1f');
+        grad.addColorStop(1,'#5c1208');
+        ctx.fillStyle = grad;
+        ctx.fillRect(cx-br, y-br+br*2*(1-pct), br*2, br*2*pct);
+        ctx.restore();
+        ctx.strokeStyle='#ffd23f';
+        ctx.lineWidth=Math.max(1,2*s);
+        ctx.beginPath(); ctx.arc(cx,y,br,0,Math.PI*2); ctx.stroke();
+      } else if(it.type==='bullet'){
+        const cx = screenX(it.lane,s);
+        ctx.fillStyle = '#ffd23f';
+        ctx.beginPath();
+        ctx.ellipse(cx,y,Math.max(1.5,4*s),Math.max(3,10*s),0,0,Math.PI*2);
+        ctx.fill();
+      }
+    });
+
+    // bullets (drawn with the same projection, sorted with the rest would also be fine,
+    // but keep them on top of the road and under the player sprite for clarity)
+    bullets.forEach(b=>{
+      const p = project(b.d);
+      const cx = screenFlatX(bulletFlatX(b),p.scale);
+      ctx.fillStyle = '#ffd23f';
+      ctx.beginPath();
+      ctx.ellipse(cx,p.y,Math.max(1.5,4*p.scale),Math.max(3,10*p.scale),0,0,Math.PI*2);
+      ctx.fill();
+    });
+
+    drawPlayer();
+
+    particles.forEach(p=>{
+      ctx.globalAlpha = Math.max(0,p.life/0.6);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,4,0,Math.PI*2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+
+    floatTexts.forEach(f=>{
+      ctx.globalAlpha = Math.max(0,f.life/0.9);
+      ctx.fillStyle = f.color;
+      ctx.font = 'bold 22px Segoe UI';
+      ctx.textAlign='center';
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.globalAlpha = 1;
+    });
+
+    ctx.restore();
+  }
+
+  function drawPlayer(){
+    const x = screenX(player.lane,1), y = playerRowY;
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.fillStyle='rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(0,26,24,8,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#3fa9ff';
+    roundRect(ctx,-20,-20,40,46,14); ctx.fill();
+    ctx.fillStyle = '#ffe0b2';
+    ctx.beginPath(); ctx.arc(0,-28,14,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#ffd23f';
+    ctx.beginPath(); ctx.arc(0,-2,16,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#10131f';
+    ctx.font='bold 16px Segoe UI';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(player.count, 0, -1);
+    ctx.restore();
+  }
+
+  function roundRect(ctx,x,y,w,h,r){
+    if(w<0) w=0;
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  resetGame();
+  render();
+})();
+</script>
+</body>
+</html>
