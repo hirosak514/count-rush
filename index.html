@@ -427,7 +427,7 @@
       <div class="devField">
         <label>初期スクロールスピード (%)</label>
         <input type="number" id="devSpeedPctInput" step="1" min="10" max="500">
-        <div class="hint">デフォルト 85.0%</div>
+        <div class="hint">デフォルト 10.0%</div>
       </div>
       <div class="devField">
         <label>スピード係数</label>
@@ -441,8 +441,8 @@
       </div>
       <div class="devField">
         <label>やられる速さ (倍率)</label>
-        <input type="number" id="devKillRateInput" step="0.05" min="0.2" max="10">
-        <div class="hint">デフォルト 0.2。敵が倒される速さ(発射間隔)を調整。中央レーン減速率と組み合わせて「倒される速さ÷進んでくる速さ」の割合を調整できます</div>
+        <input type="number" id="devKillRateInput" step="0.01" min="0.01" max="10">
+        <div class="hint">デフォルト 0.02。敵が倒される速さ(発射間隔)を調整。中央レーン減速率と組み合わせて「倒される速さ÷進んでくる速さ」の割合を調整できます</div>
       </div>
       <div class="devField">
         <label>接触時に消える列数</label>
@@ -487,12 +487,12 @@
       <div class="devField">
         <label>爆弾板の出現率 (%)</label>
         <input type="number" id="devBombPctInput" step="0.1" min="0" max="100">
-        <div class="hint">デフォルト 10.0%。左右レーンの板の一方が爆弾になる確率です。爆弾を拾うと保持数が増え、↑↓キー・Sキー(スマホは上へスワイプ)で使うと画面上の敵を一掃できます</div>
+        <div class="hint">デフォルト 38.0%。左右レーンの板の一方が爆弾になる確率です。爆弾を拾うと保持数が増え、↑↓キー・Sキー(スマホは上へスワイプ)で使うと画面上の敵を一掃できます</div>
       </div>
       <div class="devField">
         <label>「5000」板の出現率 (%)</label>
         <input type="number" id="devPlate5000Input" step="1" min="0" max="100">
-        <div class="hint">デフォルト 20%。下のスピード倍率に達した後、左右レーンの板が「5000」になる割合(「300」「1000」と合計で100%を超える場合は自動的に調整されます)</div>
+        <div class="hint">デフォルト 50%。下のスピード倍率に達した後、左右レーンの板が「5000」になる割合(「300」「1000」と合計で100%を超える場合は自動的に調整されます)</div>
       </div>
       <div class="devField">
         <label>「5000」板が出現するスピード倍率</label>
@@ -593,10 +593,16 @@
   const laneW = W / LANES;
 
   // ---------- Pseudo-3D overhead-angle camera ----------
-  const horizonY = H*0.20;
+  // Camera angled further downward (more overhead/top-down) per reference: the horizon sits
+  // close to the very top of the screen (the vanishing point reads as "the back of the
+  // track") instead of a third of the way down, and the size falloff between near and far
+  // items is gentler (bigger camDist) so the scene reads as a flatter, more top-down view
+  // rather than a steep low-angle perspective that makes tall stacks of items spill upward
+  // out of frame.
+  const horizonY = H*0.085;
   const playerRowY = H-120;
   const vanishX = W/2;
-  const camDist = 150; // smaller = steeper falloff = bigger size difference between near and far items (more pronounced depth cue)
+  const camDist = 230; // smaller = steeper falloff = bigger size difference between near and far items (more pronounced depth cue)
 
   function laneCenterX(lane){ // position at the near (player) row, full width
     return lane*laneW + laneW/2;
@@ -647,7 +653,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 85.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, bgmVariant: 2, killRateMul: 0.2, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 10.0, plate5000Pct: 20.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, bgmVariant: 2, killRateMul: 0.02, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -1050,7 +1056,7 @@
     pct = Math.max(10, Math.min(500, pct));
     coef = Math.max(0.5, Math.min(3, coef));
     centerSlowPct = Math.max(0, Math.min(90, centerSlowPct));
-    killRateMul = Math.max(0.2, Math.min(10, killRateMul));
+    killRateMul = Math.max(0.01, Math.min(10, killRateMul));
     collisionRows = Math.max(1, Math.min(100, collisionRows));
     plate300Pct = Math.max(0, Math.min(100, plate300Pct));
     plate1000Pct = Math.max(0, Math.min(100, plate1000Pct));
