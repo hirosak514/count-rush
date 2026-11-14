@@ -22,20 +22,29 @@
     overflow:hidden;
     touch-action:none;
     -webkit-user-select:none;user-select:none;
-  }
-  #wrap{
-    position:relative;
-    width:100%;
-    height:100%;
     display:flex;
     align-items:center;
     justify-content:center;
   }
+  /* #wrap is sized to exactly the same box the canvas actually renders at (same 420:720
+     aspect ratio, fit to the viewport) rather than the full viewport - otherwise, on any
+     viewport whose aspect ratio isn't 420:720 (e.g. a wide desktop window), the canvas ends
+     up as a narrow centered strip while the HUD/buttons (absolutely positioned against the
+     old 100%-of-viewport #wrap) stay stretched across the whole window, floating disconnected
+     from the game area. Matching #wrap's box to the canvas fixes that for every viewport shape. */
+  #wrap{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    max-width:calc(100vh * 420 / 720);
+    max-height:calc(100vw * 720 / 420);
+    aspect-ratio:420/720;
+  }
   #gameCanvas{
     background:#15182e;
     display:block;
-    max-width:100%;
-    max-height:100%;
+    width:100%;
+    height:100%;
     box-shadow:0 0 60px rgba(0,0,0,0.6);
     border-radius:8px;
     touch-action:none;
@@ -603,10 +612,10 @@
   // items shrink away quickly near that high horizon, which is the strong-perspective look in
   // the reference image (a flatter/bigger-camDist camera, tried first, barely changed the
   // picture because far items stayed roughly as large as before even with the horizon moved).
-  const horizonY = H*0.06;
+  const horizonY = H*0.04;
   const playerRowY = H-120;
   const vanishX = W/2;
-  const camDist = 95; // smaller = steeper falloff = bigger size difference between near and far items (more pronounced depth cue)
+  const camDist = 80; // smaller = steeper falloff = bigger size difference between near and far items (more pronounced depth cue)
 
   function laneCenterX(lane){ // position at the near (player) row, full width
     return lane*laneW + laneW/2;
