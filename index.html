@@ -1466,6 +1466,13 @@
   function stagePalette(){ return STAGE_PALETTES[(stage-1) % STAGE_PALETTES.length]; }
   let spawnTimerSide, spawnTimerCenter, spawnTimerSpike, spawnTimerDrone, droneRowCounter = 0;
   let bombCooldown = 0;
+  // Pineapple-bomb throw animation: pressing the bomb key doesn't wipe the screen instantly -
+  // a pineapple arcs up into view (growing bigger, i.e. coming toward the camera), then drops
+  // and explodes once BOMB_ANIM_DURATION has elapsed, at which point the actual drone-kill/
+  // boss-damage effect (applyBombEffect) fires. bombVisual holds the in-flight animation state,
+  // or null when no bomb is currently in the air.
+  const BOMB_ANIM_DURATION = 0.65;
+  let bombVisual = null;
   const BOMB_COOLDOWN_TIME = 0.6; // minimum time between bomb drops, so holding/mashing the
                                     // key or rapid double-taps can't chain bombs like a machine gun
   const bombValEl = document.getElementById('bombVal');
@@ -1797,13 +1804,36 @@
   // stock check AND a cooldown timer, so even a key held down, a mashed button, or a string
   // of rapid double-taps can only trigger one detonation at a time - never a dynamite "machine
   // gun" chaining through the whole stock in an instant.
+  // Position/size/rotation of the thrown pineapple at a given point in its flight (t: 0..1).
+  // It arcs up and toward the camera (growing bigger as it approaches) with a slight side-to-
+  // side sway, then drops to just in front of the player and explodes there.
+  function bombPos(t){
+    t = Math.max(0, Math.min(1, t));
+    const startY = horizonY + 0.15*(playerRowY-horizonY);
+    const endY = playerRowY - 10;
+    const easeIn = t*t;
+    const y = startY + (endY-startY)*easeIn;
+    const x = vanishX + Math.sin(t*Math.PI)*34;
+    const scale = 0.35 + 3.3*Math.pow(t, 1.3);
+    const rot = t*Math.PI*3.2;
+    return {x,y,scale,rot};
+  }
+
   function useBomb(){
     if(state !== 'playing' || isPaused) return;
     if(!player.bombs || player.bombs <= 0) return;
     if(bombCooldown > 0) return;
+    if(bombVisual) return; // only one pineapple in flight at a time
     player.bombs--;
     bombCooldown = BOMB_COOLDOWN_TIME;
     updateBombHud();
+    bombVisual = { t: 0 };
+  }
+
+  // Fires once the throw animation lands (see bombVisual handling in update()). Same
+  // screen-wipe effect as before, just delayed until the pineapple visually hits, and now
+  // centered on its actual landing spot instead of a fixed screen position.
+  function applyBombEffect(landX, landY){
     let killed = 0;
     for(const it of items){
       if(it.dead) continue;
@@ -1836,9 +1866,9 @@
         }
       }
     }
-    spawnFloatText('BOMB!', vanishX, H*0.42, '#ff6a3d');
-    spawnParticles(vanishX, H*0.55, '#ffd23f', 40);
-    spawnParticles(vanishX, H*0.4, '#ff6a3d', 40);
+    spawnFloatText('BOMB!', landX, landY-30, '#ff6a3d');
+    spawnParticles(landX, landY, '#ffd23f', 40);
+    spawnParticles(landX, landY, '#ff6a3d', 40);
     shakeT = Math.max(shakeT, 0.5);
     playExplosion();
   }
@@ -2041,6 +2071,14 @@
   function update(dt){
     elapsed += dt;
     if(bombCooldown > 0) bombCooldown -= dt;
+    if(bombVisual){
+      bombVisual.t += dt;
+      if(bombVisual.t >= BOMB_ANIM_DURATION){
+        const land = bombPos(1);
+        bombVisual = null;
+        applyBombEffect(land.x, land.y);
+      }
+    }
     // Speed ramps in steps: every SPEED_MILESTONE_M meters traveled, multiply by devSettings.speedCoef.
     // Default coef 1.0 = flat speed (dev mode can tune both the start speed % and this growth).
     const milestones = Math.floor(distance / SPEED_MILESTONE_M);
@@ -2721,6 +2759,19 @@
     });
 
     drawPlayer();
+
+    if(bombVisual){
+      const bp = bombPos(bombVisual.t/BOMB_ANIM_DURATION);
+      ctx.save();
+      ctx.translate(bp.x, bp.y);
+      ctx.rotate(bp.rot);
+      ctx.font = 'bold '+Math.max(16, 26*bp.scale)+'px Segoe UI';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 10;
+      ctx.fillText('🍍', 0, 0);
+      ctx.restore();
+    }
 
     particles.forEach(p=>{
       ctx.globalAlpha = Math.max(0,p.life/0.6);
