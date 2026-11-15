@@ -451,6 +451,7 @@
       <span class="label">STAGE</span><span id="stageVal">1</span>
       <span class="label">DISTANCE</span><span id="scoreVal">0</span>m
       <div id="bombBox" style="margin-top:4px;font-size:15px;line-height:1.1;"><span class="label">BOMB</span>🍍<span id="bombVal">0</span></div>
+      <div id="beamBox" style="margin-top:4px;font-size:13px;line-height:1.1;color:#7fe8ff;display:none;">⚡ BEAM</div>
     </div>
   </div>
   <div id="lifeWrap">
@@ -489,6 +490,8 @@
       左右レーンにまれに出る<b style="color:#ffd23f">🍍パイナップル</b>を取ると爆弾をストック。
       <b style="color:#ffd23f">↑キー・↓キー・Sキー</b>(スマホは<b style="color:#ffd23f">上へスワイプ</b>)で投下すると、
       画面上の敵を一瞬で一掃できる!<br><br>
+      左右レーンにまれに出る<b style="color:#7fe8ff">⚡ビームアイテム</b>を取ると武器がビーム砲になり威力アップ!
+      敵と衝突したりトゲ床を踏むと元の武器に戻る。<br><br>
       <b style="color:#3fa9ff">1,000m進むごとに1ステージクリア</b>。クリアするとLIFEが全回復して次のステージへ。
       ステージが上がるごとに敵の密度とボスの出現率が上がっていく!
     </p>
@@ -577,14 +580,14 @@
         <div class="hint">デフォルト 15.0倍(以前の10倍 ×1.5)。内部の移動距離(速度アップ等のゲームバランス計算には影響しません)に、この倍率を掛けた値が画面表示・スコア・ランキング・ステージ進行度に使われます</div>
       </div>
       <div class="devField">
-        <label>ビーム砲化するCOUNTのしきい値</label>
-        <input type="number" id="devBeamThresholdInput" step="1000" min="1">
-        <div class="hint">デフォルト 100,000。COUNTがこの値を超えると武器がビーム砲(見た目も専用のビームに変化)になります</div>
+        <label>ビームアイテムの出現率 (%)</label>
+        <input type="number" id="devBeamItemPctInput" step="1" min="0" max="100">
+        <div class="hint">デフォルト 15%。左右レーンの「1」の板の代わりに、この確率でビームアイテム(⚡)が出現します(パイナップル爆弾の出現率とは独立)。拾うと武器がビーム砲になります。複数拾っても威力は重複しません</div>
       </div>
       <div class="devField">
         <label>ビーム砲の威力倍率 (x)</label>
         <input type="number" id="devBeamDamageMulInput" step="0.1" min="0.1">
-        <div class="hint">デフォルト 1.2倍。ビーム砲化した後、通常の弾の威力計算結果にこの倍率を掛けます</div>
+        <div class="hint">デフォルト 1.4倍。ビーム砲を持っている間、通常の弾の威力計算結果にこの倍率を掛けます</div>
       </div>
       <div class="devField">
         <label>ステージごとの列長増加率 (%)</label>
@@ -712,6 +715,8 @@
       左右レーンにまれに出る<b style="color:#ffd23f">🍍パイナップル</b>を取ると爆弾をストック。
       <b style="color:#ffd23f">↑キー・↓キー・Sキー</b>(スマホは<b style="color:#ffd23f">上へスワイプ</b>)で投下すると、
       画面上の敵を一瞬で一掃できる!<br><br>
+      左右レーンにまれに出る<b style="color:#7fe8ff">⚡ビームアイテム</b>を取ると武器がビーム砲になり威力アップ!
+      敵と衝突したりトゲ床を踏むと元の武器に戻る。<br><br>
       <b style="color:#3fa9ff">1,000m進むごとに1ステージクリア</b>。クリアするとLIFEが全回復して次のステージへ。
       ステージが上がるごとに敵の密度とボスの出現率が上がっていく!
     </p>
@@ -839,7 +844,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 10.0, plate1000Pct: 4.0, bulletDamageDiv: 96610.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 10.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 0.6, cameraTiltPct: 1.0, camDist: 300.0, droneHitLifeLossMul: 1.5, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 30.0, bombBossDamagePct: 50.0, bossKillHealPct: 100.0, beamModeCountThreshold: 100000, beamDamageMul: 1.2 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 10.0, plate1000Pct: 4.0, bulletDamageDiv: 96610.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 10.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 0.6, cameraTiltPct: 1.0, camDist: 300.0, droneHitLifeLossMul: 1.5, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 30.0, bombBossDamagePct: 50.0, bossKillHealPct: 100.0, beamItemPct: 15.0, beamDamageMul: 1.4 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -874,7 +879,7 @@
       distanceDisplayMul: (typeof parsed.distanceDisplayMul==='number' && isFinite(parsed.distanceDisplayMul) && parsed.distanceDisplayMul>0) ? parsed.distanceDisplayMul : DEV_DEFAULTS.distanceDisplayMul,
       bombBossDamagePct: (typeof parsed.bombBossDamagePct==='number' && isFinite(parsed.bombBossDamagePct) && parsed.bombBossDamagePct>0 && parsed.bombBossDamagePct<=100) ? parsed.bombBossDamagePct : DEV_DEFAULTS.bombBossDamagePct,
       bossKillHealPct: (typeof parsed.bossKillHealPct==='number' && isFinite(parsed.bossKillHealPct) && parsed.bossKillHealPct>=0) ? parsed.bossKillHealPct : DEV_DEFAULTS.bossKillHealPct,
-      beamModeCountThreshold: (typeof parsed.beamModeCountThreshold==='number' && isFinite(parsed.beamModeCountThreshold) && parsed.beamModeCountThreshold>0) ? parsed.beamModeCountThreshold : DEV_DEFAULTS.beamModeCountThreshold,
+      beamItemPct: (typeof parsed.beamItemPct==='number' && isFinite(parsed.beamItemPct) && parsed.beamItemPct>=0) ? parsed.beamItemPct : DEV_DEFAULTS.beamItemPct,
       beamDamageMul: (typeof parsed.beamDamageMul==='number' && isFinite(parsed.beamDamageMul) && parsed.beamDamageMul>0) ? parsed.beamDamageMul : DEV_DEFAULTS.beamDamageMul,
     };
   }
@@ -1174,7 +1179,7 @@
   const devBossLifeLossInput = document.getElementById('devBossLifeLossInput');
   const devSpikePenaltyInput = document.getElementById('devSpikePenaltyInput');
   const devBossKillHealInput = document.getElementById('devBossKillHealInput');
-  const devBeamThresholdInput = document.getElementById('devBeamThresholdInput');
+  const devBeamItemPctInput = document.getElementById('devBeamItemPctInput');
   const devBeamDamageMulInput = document.getElementById('devBeamDamageMulInput');
   const devBombBossDamageInput = document.getElementById('devBombBossDamageInput');
   const devDistanceDisplayMulInput = document.getElementById('devDistanceDisplayMulInput');
@@ -1218,7 +1223,7 @@
     devBossLifeLossInput.value = devSettings.bossHitLifeLossPct;
     devSpikePenaltyInput.value = devSettings.spikePenaltyPct;
     devBossKillHealInput.value = devSettings.bossKillHealPct;
-    devBeamThresholdInput.value = devSettings.beamModeCountThreshold;
+    devBeamItemPctInput.value = devSettings.beamItemPct;
     devBeamDamageMulInput.value = devSettings.beamDamageMul;
     devBombBossDamageInput.value = devSettings.bombBossDamagePct;
     devDistanceDisplayMulInput.value = devSettings.distanceDisplayMul;
@@ -1280,7 +1285,7 @@
     let bossHitLifeLossPct = parseFloat(devBossLifeLossInput.value);
     let spikePenaltyPct = parseFloat(devSpikePenaltyInput.value);
     let bossKillHealPct = parseFloat(devBossKillHealInput.value);
-    let beamModeCountThreshold = parseFloat(devBeamThresholdInput.value);
+    let beamItemPct = parseFloat(devBeamItemPctInput.value);
     let beamDamageMul = parseFloat(devBeamDamageMulInput.value);
     let bombBossDamagePct = parseFloat(devBombBossDamageInput.value);
     let distanceDisplayMul = parseFloat(devDistanceDisplayMulInput.value);
@@ -1312,7 +1317,7 @@
     if(!isFinite(bossHitLifeLossPct) || bossHitLifeLossPct<0) bossHitLifeLossPct = DEV_DEFAULTS.bossHitLifeLossPct;
     if(!isFinite(spikePenaltyPct) || spikePenaltyPct<0) spikePenaltyPct = DEV_DEFAULTS.spikePenaltyPct;
     if(!isFinite(bossKillHealPct) || bossKillHealPct<0) bossKillHealPct = DEV_DEFAULTS.bossKillHealPct;
-    if(!isFinite(beamModeCountThreshold) || beamModeCountThreshold<=0) beamModeCountThreshold = DEV_DEFAULTS.beamModeCountThreshold;
+    if(!isFinite(beamItemPct) || beamItemPct<0) beamItemPct = DEV_DEFAULTS.beamItemPct;
     if(!isFinite(beamDamageMul) || beamDamageMul<=0) beamDamageMul = DEV_DEFAULTS.beamDamageMul;
     if(!isFinite(bombBossDamagePct) || bombBossDamagePct<=0) bombBossDamagePct = DEV_DEFAULTS.bombBossDamagePct;
     if(!isFinite(distanceDisplayMul) || distanceDisplayMul<=0) distanceDisplayMul = DEV_DEFAULTS.distanceDisplayMul;
@@ -1345,7 +1350,7 @@
     bossHitLifeLossPct = Math.max(0, Math.min(100, bossHitLifeLossPct));
     spikePenaltyPct = Math.max(0, Math.min(100, spikePenaltyPct));
     bossKillHealPct = Math.max(0, Math.min(200, bossKillHealPct));
-    beamModeCountThreshold = Math.max(1, beamModeCountThreshold);
+    beamItemPct = Math.max(0, Math.min(100, beamItemPct));
     beamDamageMul = Math.max(0.1, beamDamageMul);
     bombBossDamagePct = Math.max(1, Math.min(100, bombBossDamagePct));
     distanceDisplayMul = Math.round(Math.max(0.1, distanceDisplayMul) * 10) / 10;
@@ -1366,7 +1371,7 @@
     plateLifetimeSec = Math.max(0.1, Math.min(30, plateLifetimeSec));
     cameraTiltPct = Math.max(1, Math.min(50, cameraTiltPct));
     camDistVal = Math.max(20, Math.min(500, camDistVal));
-    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal, droneHitLifeLossMul, bossHitLifeLossPct, spikePenaltyPct, stageRowLengthGrowthPct, stageBossRateGrowthPct, distanceDisplayMul, bombBossDamagePct, bossKillHealPct, beamModeCountThreshold, beamDamageMul };
+    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal, droneHitLifeLossMul, bossHitLifeLossPct, spikePenaltyPct, stageRowLengthGrowthPct, stageBossRateGrowthPct, distanceDisplayMul, bombBossDamagePct, bossKillHealPct, beamItemPct, beamDamageMul };
     persistDevSettings(devSettings);
     applyDevSettingsLive();
     ensureAudio();
@@ -1386,7 +1391,7 @@
     devBossLifeLossInput.value = devSettings.bossHitLifeLossPct;
     devSpikePenaltyInput.value = devSettings.spikePenaltyPct;
     devBossKillHealInput.value = devSettings.bossKillHealPct;
-    devBeamThresholdInput.value = devSettings.beamModeCountThreshold;
+    devBeamItemPctInput.value = devSettings.beamItemPct;
     devBeamDamageMulInput.value = devSettings.beamDamageMul;
     devBombBossDamageInput.value = devSettings.bombBossDamagePct;
     devDistanceDisplayMulInput.value = devSettings.distanceDisplayMul;
@@ -1503,8 +1508,25 @@
   function updateBombHud(){
     if(player) bombValEl.textContent = player.bombs||0;
   }
+  const beamBoxEl = document.getElementById('beamBox');
+  function updateBeamHud(){
+    beamBoxEl.style.display = (player && player.hasBeam) ? 'block' : 'none';
+  }
   let baseSpeed, speed;
   let shakeT = 0;
+  // Fire/black-smoke effect that plays on the tank itself for a short time after it's hit by
+  // an enemy (drone swarm or boss) - not triggered by spikes, which are an environmental
+  // hazard rather than an enemy.
+  const TANK_DAMAGE_EFFECT_DURATION = 1.2;
+  let tankDamageT = 0;
+  function spawnTankSmoke(x,y){
+    for(let i=0;i<2;i++){
+      particles.push({ x:x+(Math.random()-0.5)*10, y:y+(Math.random()-0.5)*6, vx:(Math.random()-0.5)*40, vy:-80-Math.random()*60, life:0.5+Math.random()*0.3, color:'#ff7a33' });
+    }
+    for(let i=0;i<2;i++){
+      particles.push({ x:x+(Math.random()-0.5)*16, y:y+(Math.random()-0.5)*8, vx:(Math.random()-0.5)*30, vy:-50-Math.random()*50, life:0.65+Math.random()*0.35, color:'#2b2b2b' });
+    }
+  }
   let roadScroll = 0;
 
   // ---------- Audio (synthesized, no external files) ----------
@@ -1657,6 +1679,7 @@
       energy: MAX_ENERGY,
       maxEnergy: MAX_ENERGY,
       bombs: 0,
+      hasBeam: false,
     };
     bullets = [];
     items = [];
@@ -1676,10 +1699,13 @@
     spawnTimerDrone = 0.1;
     droneRowCounter = 0;
     bombCooldown = 0;
+    shakeT = 0;
+    tankDamageT = 0;
     baseSpeed = BASE_SPEED_100 * (devSettings.speedPct/100);
     speed = baseSpeed;
     updateLifeBar();
     updateBombHud();
+    updateBeamHud();
   }
 
   function updateLifeBar(){
@@ -1811,6 +1837,20 @@
     stageValEl.textContent = stage;
     player.energy = player.maxEnergy; // life fully refilled on advancing to the next stage
     updateLifeBar();
+    // unlike a normal pause, the stage-clear transition wipes the field - no leftover enemies
+    // or lane items carry over into the new stage, same as a fresh game start
+    bullets = [];
+    items = [];
+    particles = [];
+    floatTexts = [];
+    bombVisual = null;
+    spawnTimerSide = 0.2;
+    spawnTimerCenter = 1.8;
+    spawnTimerSpike = 4.0;
+    spawnTimerDrone = 0.1;
+    droneRowCounter = 0;
+    bombCooldown = 0;
+    tankDamageT = 0;
     stageClearOverlay.style.display = 'none';
     isPaused = false;
     lastTime = performance.now();
@@ -2013,10 +2053,17 @@
     const bigOnLeft = Math.random() < 0.5;
     const laneSmall = bigOnLeft ? 2 : 0;
     const laneBig = bigOnLeft ? 0 : 2;
-    // a bonus bomb occasionally takes the place of the "1" plate (devSettings.bombPct, independent
-    // of the 99/300/1000 roll above) - picking it up stocks a bomb the player can drop later.
-    if(Math.random() < Math.max(0, devSettings.bombPct)/100){
+    // a bonus bomb or beam item occasionally takes the place of the "1" plate (devSettings.
+    // bombPct / devSettings.beamItemPct, independent of the 99/300/1000 roll above) - picking
+    // up a bomb stocks one to drop later; picking up a beam item switches the weapon to the
+    // beam cannon (see fire logic in update()).
+    const slotRoll = Math.random();
+    const bombThresh = Math.max(0, devSettings.bombPct)/100;
+    const beamThresh = bombThresh + Math.max(0, devSettings.beamItemPct)/100;
+    if(slotRoll < bombThresh){
       items.push({type:'bombPlate', lane:laneSmall, d:spawnD(SPAWN_D_PLATE), baseH:40, dead:false, groundT:0});
+    } else if(slotRoll < beamThresh){
+      items.push({type:'beamPlate', lane:laneSmall, d:spawnD(SPAWN_D_PLATE), baseH:40, dead:false, groundT:0});
     } else {
       items.push({type:'plate', lane:laneSmall, d:spawnD(SPAWN_D_PLATE), baseH:40, value:1, dead:false, groundT:0});
     }
@@ -2163,10 +2210,11 @@
     // produces fractional per-hit damage (hp/capacity just count down more slowly), instead of
     // always being rounded back up to at least 1 regardless of how low the dial is turned.
     const dmgGrowth = Math.pow(devSettings.dmgGrowthCoef, milestones);
-    // Beam cannon: once COUNT passes devSettings.beamModeCountThreshold, the weapon switches
-    // to a beam (visually a glowing bolt, see render()) and hits devSettings.beamDamageMul
-    // times harder than a normal bullet would at the same COUNT.
-    const isBeamMode = player.count > devSettings.beamModeCountThreshold;
+    // Beam cannon: picking up a beam item (left/right lane, see spawnSidePlates) switches the
+    // weapon to a beam (visually a glowing bolt, see render()) that hits devSettings.
+    // beamDamageMul times harder than a normal bullet would at the same COUNT. Lost again on
+    // an enemy collision or a spike hit (see the collision/spike-hit handling below).
+    const isBeamMode = !!player.hasBeam;
     const dmg = (player.count/devSettings.bulletDamageDiv) * dmgGrowth * devSettings.dmgLevel * (isBeamMode ? devSettings.beamDamageMul : 1);
     // multishot: COUNT past a threshold fires extra bullets per shot (not just faster shots),
     // capped at DRONE_COLS since a center-lane row only has that many columns to hit anyway.
@@ -2303,6 +2351,23 @@
             break;
           }
         }
+      } else if(it.type==='beamPlate'){
+        for(const b of bullets){
+          if(b.d<0 || b.lane!==it.lane) continue;
+          if(b.d >= it.d){
+            it.dead = true;
+            // picking up any number of beam items just keeps the weapon in beam mode - it
+            // doesn't stack into extra power or extra charges
+            player.hasBeam = true;
+            updateBeamHud();
+            const p = project(it.d);
+            spawnFloatText('⚡BEAM', screenX(it.lane,p.scale), p.y, '#7fe8ff');
+            spawnParticles(screenX(it.lane,p.scale), p.y, '#7fe8ff');
+            playPop(820);
+            b.d = -999;
+            break;
+          }
+        }
       } else if(it.type==='toothpaste'){
         for(const b of bullets){
           if(b.d<0 || b.lane!==1 || it.popped || it.capacity<=0) continue;
@@ -2381,6 +2446,9 @@
       } else if(it.type==='bombPlate'){
         if(it.d <= 0){ it.groundT = (it.groundT||0) + dt; if(it.groundT >= devSettings.plateLifetimeSec) it.dead = true; }
         if(it.d <= -40) it.dead = true; // passes by harmlessly if missed
+      } else if(it.type==='beamPlate'){
+        if(it.d <= 0){ it.groundT = (it.groundT||0) + dt; if(it.groundT >= devSettings.plateLifetimeSec) it.dead = true; }
+        if(it.d <= -40) it.dead = true; // passes by harmlessly if missed
       } else if(it.type==='spike'){
         if(it.d <= 0){
           it.dead = true;
@@ -2390,6 +2458,7 @@
             player.count = Math.max(1, Math.round(player.count * (1-spikePenaltyFrac)));
             const lost = before - player.count;
             const cx = screenX(it.lane,1);
+            if(player.hasBeam){ player.hasBeam = false; updateBeamHud(); } // hitting a spike loses the beam cannon
             spawnFloatText('-'+Math.round(spikePenaltyFrac*100)+'%', cx, playerRowY-40, '#ff8a5c');
             spawnParticles(cx, playerRowY, '#ff8a5c', 16);
             shakeT = 0.2;
@@ -2414,6 +2483,8 @@
           const loss = Math.min(player.maxEnergy, Math.round(it.hp * (devSettings.bossHitLifeLossPct/100)));
           player.energy = Math.max(0, player.energy-loss);
           updateLifeBar();
+          if(player.hasBeam){ player.hasBeam = false; updateBeamHud(); } // crashing into the boss loses the beam cannon
+          tankDamageT = TANK_DAMAGE_EFFECT_DURATION;
           spawnFloatText('-'+loss, screenX(1,1), playerRowY-40, '#ff4d5e');
           spawnParticles(screenX(1,1), playerRowY, '#ff4d5e', 30);
           shakeT = 0.4;
@@ -2447,6 +2518,8 @@
       const loss = Math.min(16, 1.4 * droneCollisions.length) * devSettings.droneHitLifeLossMul;
       player.energy = Math.max(0, player.energy-loss);
       updateLifeBar();
+      if(player.hasBeam){ player.hasBeam = false; updateBeamHud(); } // crashing into enemies loses the beam cannon
+      tankDamageT = TANK_DAMAGE_EFFECT_DURATION;
       spawnFloatText('-'+Math.round(loss*10)/10, vanishX, playerRowY-34, '#ff4d5e');
       for(const it of droneCollisions){
         const cx = laneW + (it.col+0.5)*(laneW/DRONE_COLS); // at the player row, scale==1
@@ -2468,6 +2541,11 @@
     floatTexts = floatTexts.filter(f=>f.life>0);
 
     if(shakeT>0) shakeT -= dt;
+
+    if(tankDamageT > 0){
+      tankDamageT -= dt;
+      spawnTankSmoke(screenX(player.lane,1), playerRowY-20);
+    }
 
     countValEl.textContent = player.count;
     scoreValEl.textContent = Math.floor(displayDistance());
@@ -2589,6 +2667,16 @@
         ctx.font = 'bold '+Math.max(14,40*s)+'px Segoe UI';
         ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillText('🍍', cx, y+1*s);
+      } else if(it.type==='beamPlate'){
+        // a glowing lightning-bolt pickup, matching the beam bullet's cyan/white glow
+        const cx = screenX(it.lane,s);
+        ctx.save();
+        ctx.shadowColor = '#7fe8ff';
+        ctx.shadowBlur = 14*s;
+        ctx.font = 'bold '+Math.max(14,38*s)+'px Segoe UI';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('⚡', cx, y+1*s);
+        ctx.restore();
       } else if(it.type==='spike'){
         const cx = screenX(it.lane,s);
         const w0 = (laneW-14)*s, h0 = it.baseH*s;
@@ -2782,7 +2870,7 @@
       const p = project(b.d);
       const cx = screenFlatX(bulletFlatX(b),p.scale);
       if(b.beam){
-        // beam-cannon mode (COUNT past devSettings.beamModeCountThreshold): a longer, glowing
+        // beam-cannon mode (player.hasBeam, from picking up a beam item): a longer, glowing
         // cyan/white bolt instead of the normal small yellow bullet
         ctx.save();
         ctx.shadowColor = '#7fe8ff';
