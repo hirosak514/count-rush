@@ -113,6 +113,35 @@
     background:linear-gradient(90deg,#34e089,#9ef542);
     transition:width 0.15s ease-out, background 0.3s;
   }
+  #stageDistWrap{
+    position:absolute;
+    top:132px;left:18px;right:18px;
+    z-index:5;
+    pointer-events:none;
+  }
+  #stageDistLabel{
+    font-size:11px;
+    font-weight:800;
+    color:rgba(255,255,255,0.8);
+    text-shadow:0 2px 4px rgba(0,0,0,0.6);
+    margin-bottom:3px;
+    letter-spacing:1px;
+  }
+  #stageDistBarOuter{
+    width:100%;
+    height:10px;
+    background:rgba(0,0,0,0.45);
+    border-radius:6px;
+    border:1.5px solid rgba(255,255,255,0.25);
+    overflow:hidden;
+  }
+  #stageDistBarInner{
+    height:100%;
+    width:0%;
+    border-radius:6px;
+    background:linear-gradient(90deg,#3fa9ff,#7fe8ff);
+    transition:width 0.15s ease-out;
+  }
   .overlay{
     position:absolute;
     inset:0;
@@ -224,6 +253,23 @@
   }
   #pauseBtn{ left:12px; }
   #quitBtn{ right:12px; }
+  #howToBtn{
+    position:absolute;
+    top:8px;left:12px;
+    z-index:12;
+    background:rgba(0,0,0,0.4);
+    border:1px solid rgba(255,255,255,0.25);
+    color:#fff;
+    font-size:15px;
+    font-weight:700;
+    width:28px;height:28px;
+    border-radius:50%;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    line-height:1;
+  }
   .devModal{
     position:absolute;
     inset:0;
@@ -397,6 +443,7 @@
   <div id="hud">
     <div id="countBox"><span class="label">COUNT</span><span id="countVal">1</span></div>
     <div id="scoreBox">
+      <span class="label">STAGE</span><span id="stageVal">1</span>
       <span class="label">DISTANCE</span><span id="scoreVal">0</span>m
       <div id="bombBox" style="margin-top:4px;font-size:15px;line-height:1.1;"><span class="label">BOMB</span>🍍<span id="bombVal">0</span></div>
     </div>
@@ -405,9 +452,14 @@
     <div id="lifeLabel">LIFE</div>
     <div id="lifeBarOuter"><div id="lifeBarInner"></div></div>
   </div>
+  <div id="stageDistWrap">
+    <div id="stageDistLabel">PROGRESS <span id="stageDistVal">0</span>/1000m</div>
+    <div id="stageDistBarOuter"><div id="stageDistBarInner"></div></div>
+  </div>
   <div id="touchHint">左右タップ / 矢印キー・A D でレーン移動 ・ 上へスワイプ / ↑↓・S で爆弾投下</div>
   <button id="devTrigger" aria-label="dev"></button>
   <button id="soundToggleBtn" aria-label="sound toggle">🔊 Sound</button>
+  <button id="howToBtn" aria-label="how to play" title="遊び方">❓</button>
   <button id="pauseBtn" aria-label="pause" title="一時停止 (P)">⏸</button>
   <button id="quitBtn" aria-label="quit" title="終了 (Esc)">✕</button>
 
@@ -416,6 +468,32 @@
     <p style="text-align:center;">ゲームを一時停止中です。</p>
     <button class="btn" id="resumeBtn">再開 (P)</button>
     <button class="btn" id="pauseQuitBtn" style="margin-top:12px;background:linear-gradient(180deg,#888,#555);box-shadow:0 6px 0 #333,0 10px 20px rgba(0,0,0,0.4);">終了してタイトルへ</button>
+  </div>
+
+  <div class="overlay" id="howToOverlay" style="display:none;">
+    <h1 style="font-size:26px;">遊び方</h1>
+    <p>
+      <b style="color:var(--accent2)">左右のレーン</b>には「+1」と「+99」の板がランダムに出現。
+      そのレーンに乗って撃つと板が壊れて仲間が増える。<br><br>
+      <b style="color:#bda8ff">中央レーン</b>には歯磨き粉を撃って中身を出し切ると、
+      仲間が一気に増える！<br><br>
+      <b style="color:var(--danger)">赤い敵の群れ</b>や<b style="color:#ff8a5c">ボス</b>を倒しきれないと
+      <b style="color:var(--danger)">LIFE</b>が減る。0になったら終了。<br>
+      ボスを倒すとLIFEが回復する！<br><br>
+      時々現れる<b style="color:#ff8a5c">トゲ床</b>はレーンを移動して避けよう。踏むと仲間が減る。<br><br>
+      左右レーンにまれに出る<b style="color:#ffd23f">🍍パイナップル</b>を取ると爆弾をストック。
+      <b style="color:#ffd23f">↑キー・↓キー・Sキー</b>(スマホは<b style="color:#ffd23f">上へスワイプ</b>)で投下すると、
+      画面上の敵を一瞬で一掃できる!<br><br>
+      <b style="color:#3fa9ff">1,000m進むごとに1ステージクリア</b>。クリアするとLIFEが全回復して次のステージへ。
+      ステージが上がるごとに敵の密度とボスの出現率が上がっていく!
+    </p>
+    <button class="btn" id="howToCloseBtn">閉じる</button>
+  </div>
+
+  <div class="overlay" id="stageClearOverlay" style="display:none;">
+    <h1 id="stageClearTitle" style="font-size:28px;color:#3fa9ff;">STAGE 1 CLEAR!</h1>
+    <p style="text-align:center;">LIFEが全回復しました。<br>次のステージは敵が少し手強くなります。</p>
+    <button class="btn" id="stageClearNextBtn">次のステージへ</button>
   </div>
 
   <div class="devModal" id="devPasscodeModal">
@@ -477,6 +555,16 @@
         <label>とげ床を踏んだ時の減少率 (%)</label>
         <input type="number" id="devSpikePenaltyInput" step="1" min="0" max="100">
         <div class="hint">デフォルト 10%。とげ床を踏むとCOUNT(仲間の数)がこの割合分だけ減ります。※現状これはライフバーではなくCOUNTを減らす仕組みです</div>
+      </div>
+      <div class="devField">
+        <label>ステージごとの列長増加率 (%)</label>
+        <input type="number" id="devStageRowLengthInput" step="1" min="0" max="200">
+        <div class="hint">デフォルト 20%。ステージが1つ上がるごとに、中央レーンの敵の列の長さ(奥行き方向の密度)がこの割合ずつ増えていきます</div>
+      </div>
+      <div class="devField">
+        <label>ステージごとのボス出現率増加率 (%)</label>
+        <input type="number" id="devStageBossRateInput" step="1" min="0" max="200">
+        <div class="hint">デフォルト 10%。ステージが1つ上がるごとに、ボスが出現する確率がこの割合分増えていきます(上限90%)</div>
       </div>
       <div class="devField">
         <label>「300」板の出現率 (%)</label>
@@ -590,10 +678,12 @@
       <b style="color:var(--danger)">赤い敵の群れ</b>や<b style="color:#ff8a5c">ボス</b>を倒しきれないと
       <b style="color:var(--danger)">LIFE</b>が減る。0になったら終了。<br>
       ボスを倒すとLIFEが回復する！<br><br>
-      時々現れる<b style="color:#ff8a5c">トゲ床</b>はレーンを移動して避けよう。踏むと仲間が10%減る。<br><br>
+      時々現れる<b style="color:#ff8a5c">トゲ床</b>はレーンを移動して避けよう。踏むと仲間が減る。<br><br>
       左右レーンにまれに出る<b style="color:#ffd23f">🍍パイナップル</b>を取ると爆弾をストック。
       <b style="color:#ffd23f">↑キー・↓キー・Sキー</b>(スマホは<b style="color:#ffd23f">上へスワイプ</b>)で投下すると、
-      画面上の敵を一瞬で一掃できる!
+      画面上の敵を一瞬で一掃できる!<br><br>
+      <b style="color:#3fa9ff">1,000m進むごとに1ステージクリア</b>。クリアするとLIFEが全回復して次のステージへ。
+      ステージが上がるごとに敵の密度とボスの出現率が上がっていく!
     </p>
     <button class="btn" id="startBtn">スタート</button>
     <button class="btn secondary" id="openRankBtn" style="margin-top:12px;">🏆 ランキング</button>
@@ -692,6 +782,15 @@
   const countValEl = document.getElementById('countVal');
   const scoreValEl = document.getElementById('scoreVal');
   const lifeBarInner = document.getElementById('lifeBarInner');
+  const stageValEl = document.getElementById('stageVal');
+  const stageDistValEl = document.getElementById('stageDistVal');
+  const stageDistBarInner = document.getElementById('stageDistBarInner');
+  const howToBtn = document.getElementById('howToBtn');
+  const howToOverlay = document.getElementById('howToOverlay');
+  const howToCloseBtn = document.getElementById('howToCloseBtn');
+  const stageClearOverlay = document.getElementById('stageClearOverlay');
+  const stageClearTitleEl = document.getElementById('stageClearTitle');
+  const stageClearNextBtn = document.getElementById('stageClearNextBtn');
   const startOverlay = document.getElementById('startOverlay');
   const gameOverOverlay = document.getElementById('gameOverOverlay');
   const finalScoreEl = document.getElementById('finalScore');
@@ -704,7 +803,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 2.0, cameraTiltPct: 4.0, camDist: 160.0, droneHitLifeLossMul: 1.0, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 2.0, cameraTiltPct: 4.0, camDist: 160.0, droneHitLifeLossMul: 1.0, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -734,6 +833,8 @@
       droneHitLifeLossMul: (typeof parsed.droneHitLifeLossMul==='number' && isFinite(parsed.droneHitLifeLossMul) && parsed.droneHitLifeLossMul>=0) ? parsed.droneHitLifeLossMul : DEV_DEFAULTS.droneHitLifeLossMul,
       bossHitLifeLossPct: (typeof parsed.bossHitLifeLossPct==='number' && isFinite(parsed.bossHitLifeLossPct) && parsed.bossHitLifeLossPct>=0) ? parsed.bossHitLifeLossPct : DEV_DEFAULTS.bossHitLifeLossPct,
       spikePenaltyPct: (typeof parsed.spikePenaltyPct==='number' && isFinite(parsed.spikePenaltyPct) && parsed.spikePenaltyPct>=0 && parsed.spikePenaltyPct<=100) ? parsed.spikePenaltyPct : DEV_DEFAULTS.spikePenaltyPct,
+      stageRowLengthGrowthPct: (typeof parsed.stageRowLengthGrowthPct==='number' && isFinite(parsed.stageRowLengthGrowthPct) && parsed.stageRowLengthGrowthPct>=0) ? parsed.stageRowLengthGrowthPct : DEV_DEFAULTS.stageRowLengthGrowthPct,
+      stageBossRateGrowthPct: (typeof parsed.stageBossRateGrowthPct==='number' && isFinite(parsed.stageBossRateGrowthPct) && parsed.stageBossRateGrowthPct>=0) ? parsed.stageBossRateGrowthPct : DEV_DEFAULTS.stageBossRateGrowthPct,
     };
   }
   function loadDevSettings(){
@@ -995,7 +1096,7 @@
     saveRankName(name);
     rankSubmitBtn.disabled = true;
     rankSubmitMsg.textContent = '登録中...';
-    const finalDistance = Math.floor(distance);
+    const finalDistance = Math.floor(displayDistance());
     // the country lookup usually finished in the background already (kicked off on page load);
     // if not, wait for it here rather than skip it, but don't let a slow/failed lookup block
     // saving the score locally for long - detectCountryCode() already fails safe to null.
@@ -1031,6 +1132,8 @@
   const devDroneLifeLossInput = document.getElementById('devDroneLifeLossInput');
   const devBossLifeLossInput = document.getElementById('devBossLifeLossInput');
   const devSpikePenaltyInput = document.getElementById('devSpikePenaltyInput');
+  const devStageRowLengthInput = document.getElementById('devStageRowLengthInput');
+  const devStageBossRateInput = document.getElementById('devStageBossRateInput');
   const devPlate300Input = document.getElementById('devPlate300Input');
   const devPlate1000Input = document.getElementById('devPlate1000Input');
   const devBulletDamageDivInput = document.getElementById('devBulletDamageDivInput');
@@ -1068,6 +1171,8 @@
     devDroneLifeLossInput.value = devSettings.droneHitLifeLossMul;
     devBossLifeLossInput.value = devSettings.bossHitLifeLossPct;
     devSpikePenaltyInput.value = devSettings.spikePenaltyPct;
+    devStageRowLengthInput.value = devSettings.stageRowLengthGrowthPct;
+    devStageBossRateInput.value = devSettings.stageBossRateGrowthPct;
     devPlate300Input.value = devSettings.plate300Pct;
     devPlate1000Input.value = devSettings.plate1000Pct;
     devBulletDamageDivInput.value = devSettings.bulletDamageDiv;
@@ -1123,6 +1228,8 @@
     let droneHitLifeLossMul = parseFloat(devDroneLifeLossInput.value);
     let bossHitLifeLossPct = parseFloat(devBossLifeLossInput.value);
     let spikePenaltyPct = parseFloat(devSpikePenaltyInput.value);
+    let stageRowLengthGrowthPct = parseFloat(devStageRowLengthInput.value);
+    let stageBossRateGrowthPct = parseFloat(devStageBossRateInput.value);
     let plate300Pct = parseFloat(devPlate300Input.value);
     let plate1000Pct = parseFloat(devPlate1000Input.value);
     let bulletDamageDiv = parseFloat(devBulletDamageDivInput.value);
@@ -1148,6 +1255,8 @@
     if(!isFinite(droneHitLifeLossMul) || droneHitLifeLossMul<0) droneHitLifeLossMul = DEV_DEFAULTS.droneHitLifeLossMul;
     if(!isFinite(bossHitLifeLossPct) || bossHitLifeLossPct<0) bossHitLifeLossPct = DEV_DEFAULTS.bossHitLifeLossPct;
     if(!isFinite(spikePenaltyPct) || spikePenaltyPct<0) spikePenaltyPct = DEV_DEFAULTS.spikePenaltyPct;
+    if(!isFinite(stageRowLengthGrowthPct) || stageRowLengthGrowthPct<0) stageRowLengthGrowthPct = DEV_DEFAULTS.stageRowLengthGrowthPct;
+    if(!isFinite(stageBossRateGrowthPct) || stageBossRateGrowthPct<0) stageBossRateGrowthPct = DEV_DEFAULTS.stageBossRateGrowthPct;
     if(!isFinite(plate300Pct)) plate300Pct = DEV_DEFAULTS.plate300Pct;
     if(!isFinite(plate1000Pct)) plate1000Pct = DEV_DEFAULTS.plate1000Pct;
     if(!isFinite(bulletDamageDiv) || bulletDamageDiv<=0) bulletDamageDiv = DEV_DEFAULTS.bulletDamageDiv;
@@ -1174,6 +1283,8 @@
     droneHitLifeLossMul = Math.max(0, Math.min(10, droneHitLifeLossMul));
     bossHitLifeLossPct = Math.max(0, Math.min(100, bossHitLifeLossPct));
     spikePenaltyPct = Math.max(0, Math.min(100, spikePenaltyPct));
+    stageRowLengthGrowthPct = Math.max(0, Math.min(200, stageRowLengthGrowthPct));
+    stageBossRateGrowthPct = Math.max(0, Math.min(200, stageBossRateGrowthPct));
     plate300Pct = Math.max(0, Math.min(100, plate300Pct));
     plate1000Pct = Math.max(0, Math.min(100, plate1000Pct));
     bulletDamageDiv = Math.max(10, Math.min(100000, bulletDamageDiv));
@@ -1189,7 +1300,7 @@
     plateLifetimeSec = Math.max(0.1, Math.min(30, plateLifetimeSec));
     cameraTiltPct = Math.max(1, Math.min(50, cameraTiltPct));
     camDistVal = Math.max(20, Math.min(500, camDistVal));
-    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal, droneHitLifeLossMul, bossHitLifeLossPct, spikePenaltyPct };
+    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal, droneHitLifeLossMul, bossHitLifeLossPct, spikePenaltyPct, stageRowLengthGrowthPct, stageBossRateGrowthPct };
     persistDevSettings(devSettings);
     applyDevSettingsLive();
     ensureAudio();
@@ -1208,6 +1319,8 @@
     devDroneLifeLossInput.value = devSettings.droneHitLifeLossMul;
     devBossLifeLossInput.value = devSettings.bossHitLifeLossPct;
     devSpikePenaltyInput.value = devSettings.spikePenaltyPct;
+    devStageRowLengthInput.value = devSettings.stageRowLengthGrowthPct;
+    devStageBossRateInput.value = devSettings.stageBossRateGrowthPct;
     devPlate300Input.value = devSettings.plate300Pct;
     devPlate1000Input.value = devSettings.plate1000Pct;
     devBulletDamageDivInput.value = devSettings.bulletDamageDiv;
@@ -1288,6 +1401,23 @@
 
   let player, bullets, items, particles, floatTexts;
   let distance, elapsed, maxCount;
+  // ---------- STAGES ----------
+  // distance (raw, internal) still drives the speed-milestone/difficulty pacing exactly as
+  // before. DISTANCE_DISPLAY_MUL only scales the number shown to the player and used for
+  // scoring/ranking/stage-progress, so the underlying game balance is untouched.
+  const DISTANCE_DISPLAY_MUL = 10;
+  const STAGE_DISTANCE_M = 1000; // displayed meters needed to clear a stage
+  function displayDistance(){ return distance*DISTANCE_DISPLAY_MUL; }
+  let stage, stageStartDistance; // stageStartDistance: raw distance value when the current stage began
+  // color palettes for the drone swarm and the boss, cycling once per stage so each stage reads
+  // visually distinct
+  const STAGE_PALETTES = [
+    { droneLight:'#ff8a8a', droneMid:'#ff4d5e', droneDark:'#b01f30', bossShadow:'rgba(120,220,80,0.6)', bossRidge:'#23330f', bossBody:'#17240d', bossLight:'#9fdb7a', bossMid:'#4f8c2f', bossDark:'#1f4010' },
+    { droneLight:'#8ab4ff', droneMid:'#4d6eff', droneDark:'#1f2fb0', bossShadow:'rgba(220,160,80,0.6)', bossRidge:'#332310', bossBody:'#241a0d', bossLight:'#dba97a', bossMid:'#8c5a2f', bossDark:'#402510' },
+    { droneLight:'#ffea8a', droneMid:'#ffd23f', droneDark:'#b08a1f', bossShadow:'rgba(220,120,220,0.6)', bossRidge:'#330f33', bossBody:'#240d24', bossLight:'#d97ad9', bossMid:'#8c2f8c', bossDark:'#401040' },
+    { droneLight:'#b48aff', droneMid:'#8a4dff', droneDark:'#4a1fb0', bossShadow:'rgba(120,220,220,0.6)', bossRidge:'#0f3333', bossBody:'#0d2424', bossLight:'#7adbd9', bossMid:'#2f8c8a', bossDark:'#104040' },
+  ];
+  function stagePalette(){ return STAGE_PALETTES[(stage-1) % STAGE_PALETTES.length]; }
   let spawnTimerSide, spawnTimerCenter, spawnTimerSpike, spawnTimerDrone, droneRowCounter = 0;
   let bombCooldown = 0;
   const BOMB_COOLDOWN_TIME = 0.6; // minimum time between bomb drops, so holding/mashing the
@@ -1458,6 +1588,11 @@
     distance = 0;
     elapsed = 0;
     maxCount = player.count;
+    stage = 1;
+    stageStartDistance = 0;
+    stageValEl.textContent = stage;
+    stageDistValEl.textContent = 0;
+    stageDistBarInner.style.width = '0%';
     spawnTimerSide = 0.2;
     spawnTimerCenter = 1.8;
     spawnTimerSpike = 4.0;
@@ -1495,7 +1630,7 @@
     state = 'over';
     isPaused = false;
     pauseOverlay.style.display = 'none';
-    finalScoreEl.textContent = Math.floor(distance);
+    finalScoreEl.textContent = Math.floor(displayDistance());
     finalCountEl.textContent = maxCount;
     gameOverOverlay.style.display = 'flex';
     stopBGM();
@@ -1506,7 +1641,7 @@
     lastSubmittedTs = null;
     const localBest = loadLocalRanking();
     const bestDistance = localBest.length ? localBest[0].distance : 0;
-    const finalDistance = Math.floor(distance);
+    const finalDistance = Math.floor(displayDistance());
     rankResultMsg.textContent = (finalDistance > bestDistance) ? '🎉 自己ベスト更新!' : '';
   }
 
@@ -1541,6 +1676,8 @@
     isPaused = false;
     pauseOverlay.style.display = 'none';
     gameOverOverlay.style.display = 'none';
+    howToOverlay.style.display = 'none';
+    stageClearOverlay.style.display = 'none';
     startOverlay.style.display = 'flex';
     stopBGM();
   }
@@ -1549,6 +1686,50 @@
   resumeBtn.addEventListener('click', resumeGame);
   quitBtn.addEventListener('click', quitToTitle);
   pauseQuitBtn.addEventListener('click', quitToTitle);
+
+  // ---------- HOW TO PLAY (mid-game) ----------
+  // Pressing it mid-run pauses gameplay (reusing the same isPaused flag the regular pause uses)
+  // and shows the rules; closing it resumes exactly where play was paused. From the title
+  // screen (state !== 'playing') it just shows the overlay with nothing to pause/resume.
+  howToBtn.addEventListener('click', ()=>{
+    if(state === 'playing' && !isPaused){
+      isPaused = true;
+      stopBGM();
+    }
+    howToOverlay.style.display = 'flex';
+  });
+  howToCloseBtn.addEventListener('click', ()=>{
+    howToOverlay.style.display = 'none';
+    if(state === 'playing' && isPaused){
+      isPaused = false;
+      lastTime = performance.now();
+      requestAnimationFrame(loop);
+      startBGM();
+    }
+  });
+
+  // ---------- STAGES ----------
+  // Reached once per update() when the current stage's progress hits STAGE_DISTANCE_M (see
+  // update()). Pauses gameplay (via the same isPaused flag) and shows a stage-clear overlay;
+  // pressing its button advances to the next stage, refills life, and resumes.
+  function triggerStageClear(){
+    isPaused = true;
+    stopBGM();
+    stageClearTitleEl.textContent = 'STAGE '+stage+' CLEAR!';
+    stageClearOverlay.style.display = 'flex';
+  }
+  stageClearNextBtn.addEventListener('click', ()=>{
+    stage++;
+    stageStartDistance = distance;
+    stageValEl.textContent = stage;
+    player.energy = player.maxEnergy; // life fully refilled on advancing to the next stage
+    updateLifeBar();
+    stageClearOverlay.style.display = 'none';
+    isPaused = false;
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+    startBGM();
+  });
 
   // ---------- INPUT ----------
   function moveLane(dir){
@@ -1606,6 +1787,11 @@
       if(e.key === 'Escape') closeDevPanel();
       return;
     }
+    if(howToOverlay.style.display === 'flex'){
+      if(e.key === 'Escape') howToCloseBtn.click();
+      return;
+    }
+    if(stageClearOverlay.style.display === 'flex') return; // must press the stage-clear button
     if(e.key === 'ArrowLeft' || e.key.toLowerCase()==='a') moveLane(-1);
     if(e.key === 'ArrowRight' || e.key.toLowerCase()==='d') moveLane(1);
     if(e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key.toLowerCase()==='s') useBomb();
@@ -1724,9 +1910,13 @@
   }
 
   function spawnCenterObstacle(){
-    // toothpaste or a rare standalone boss (fry are now spawned continuously, see spawnDroneRow)
+    // toothpaste or a rare standalone boss (fry are now spawned continuously, see spawnDroneRow).
+    // Baseline boss chance is 20%, growing by devSettings.stageBossRateGrowthPct per stage
+    // (compounding), capped at 90% so toothpaste/grapes never fully stop appearing.
+    const baseBossChance = 0.2;
+    const bossChance = Math.min(0.9, baseBossChance * Math.pow(1 + devSettings.stageBossRateGrowthPct/100, stage-1));
     const roll = Math.random();
-    if(roll < 0.8){
+    if(roll < (1-bossChance)){
       const diffScale = 1 + elapsed/35;
       const small = Math.random() < 0.5;
       const capacity = Math.round((small? 10+Math.random()*8 : 22+Math.random()*14) * diffScale);
@@ -1797,11 +1987,23 @@
     // playable indefinitely instead of degenerating at high speed.
     speed = Math.min(speed, baseSpeed*devSettings.maxSpeedMul);
     distance += speed*dt/220;
+    // Stage clear: once this stage's progress (displayed-scale distance since the stage began)
+    // reaches STAGE_DISTANCE_M, pause and show the stage-clear overlay. triggerStageClear() sets
+    // isPaused, so update() won't run again until the player presses "next stage".
+    const stageProgressM = (distance-stageStartDistance) * DISTANCE_DISPLAY_MUL;
+    if(stageProgressM >= STAGE_DISTANCE_M){
+      stageDistValEl.textContent = STAGE_DISTANCE_M;
+      stageDistBarInner.style.width = '100%';
+      triggerStageClear();
+      return;
+    }
     // Once scroll speed has hit that hard cap, difficulty keeps climbing a different way instead:
     // the center lane's enemy column gets denser (more rows stacked per depth-slot), growing by
     // devSettings.rowDensityGrowthPct for every SPEED_MILESTONE_M traveled past the point where
     // speed capped out. Capped itself (ROW_DENSITY_MAX_MUL) for the same reason speed itself is
     // capped - unbounded compounding growth eventually breaks rendering/collision fidelity.
+    // devSettings.stageRowLengthGrowthPct additionally lengthens the enemy column once per
+    // stage, compounding with the speed-cap-based growth above.
     const ROW_DENSITY_MAX_MUL = 6;
     let rowDensityMul = 1;
     if(devSettings.speedCoef > 1){
@@ -1809,7 +2011,8 @@
       const excessMilestones = Math.max(0, milestones - cappedMilestone);
       rowDensityMul = Math.pow(1 + devSettings.rowDensityGrowthPct/100, excessMilestones);
     }
-    rowDensityMul = Math.min(rowDensityMul, ROW_DENSITY_MAX_MUL);
+    const stageRowLengthMul = Math.pow(1 + devSettings.stageRowLengthGrowthPct/100, stage-1);
+    rowDensityMul = Math.min(rowDensityMul * stageRowLengthMul, ROW_DENSITY_MAX_MUL);
 
     player.lane += (player.targetLane - player.lane) * Math.min(1, dt*14);
 
@@ -2134,7 +2337,10 @@
     if(shakeT>0) shakeT -= dt;
 
     countValEl.textContent = player.count;
-    scoreValEl.textContent = Math.floor(distance);
+    scoreValEl.textContent = Math.floor(displayDistance());
+    const stageBarM = Math.min(STAGE_DISTANCE_M, stageProgressM);
+    stageDistValEl.textContent = Math.floor(stageBarM);
+    stageDistBarInner.style.width = (stageBarM/STAGE_DISTANCE_M*100)+'%';
   }
 
   function spawnFloatText(text,x,y,color){
@@ -2339,10 +2545,11 @@
         const flatX = laneW + (it.col+0.5)*cellW;
         const cx = vanishX + (flatX - vanishX)*s;
         const r = Math.max(1.5, (cellW/2)*s);
+        const pal = stagePalette();
         const grad = ctx.createRadialGradient(cx-r*0.35,y-r*0.35,r*0.15,cx,y,r);
-        grad.addColorStop(0,'#ff8a8a');
-        grad.addColorStop(0.55,'#ff4d5e');
-        grad.addColorStop(1,'#b01f30');
+        grad.addColorStop(0,pal.droneLight);
+        grad.addColorStop(0.55,pal.droneMid);
+        grad.addColorStop(1,pal.droneDark);
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.arc(cx,y,r,0,Math.PI*2);
@@ -2354,17 +2561,18 @@
         const cx = screenX(1,s);
         const br = Math.max(4, (laneW/3)*s);
         const pct = it.hp/it.maxHp;
+        const bpal = stagePalette();
         ctx.save();
-        ctx.shadowColor='rgba(120,220,80,0.6)';
+        ctx.shadowColor=bpal.bossShadow;
         ctx.shadowBlur=14*s;
         ctx.beginPath();
         ctx.arc(cx,y,br,0,Math.PI*2);
-        ctx.fillStyle = '#17240d';
+        ctx.fillStyle = bpal.bossBody;
         ctx.fill();
         ctx.restore();
         // jagged spiky ridge around the top of the head
         ctx.save();
-        ctx.fillStyle = '#23330f';
+        ctx.fillStyle = bpal.bossRidge;
         const spikeCount = 8;
         ctx.beginPath();
         for(let i=0;i<=spikeCount;i++){
@@ -2383,9 +2591,9 @@
         ctx.arc(cx,y,br,0,Math.PI*2);
         ctx.clip();
         const grad = ctx.createRadialGradient(cx-br*0.35,y-br*0.35,br*0.15,cx,y,br);
-        grad.addColorStop(0,'#9fdb7a');
-        grad.addColorStop(0.5,'#4f8c2f');
-        grad.addColorStop(1,'#1f4010');
+        grad.addColorStop(0,bpal.bossLight);
+        grad.addColorStop(0.5,bpal.bossMid);
+        grad.addColorStop(1,bpal.bossDark);
         ctx.fillStyle = grad;
         ctx.fillRect(cx-br, y-br+br*2*(1-pct), br*2, br*2*pct);
         ctx.restore();
@@ -2470,57 +2678,53 @@
   }
 
   function drawPlayer(){
-    // original mecha/robot design holding a rifle (not based on any existing copyrighted
-    // character's specific design) - angular armored torso, twin-eye visor on the helmet,
-    // shoulder plates, and a rifle held across the body. COUNT is shown on the chest plate.
+    // original tank design (not based on any existing real or fictional vehicle) - tracked
+    // hull with a turret carrying three parallel gun barrels pointing forward (up-screen).
+    // COUNT is shown on the turret front.
     const x = screenX(player.lane,1), y = playerRowY;
     ctx.save();
     ctx.translate(x,y);
     ctx.fillStyle='rgba(0,0,0,0.35)';
     ctx.beginPath();
-    ctx.ellipse(0,30,26,8,0,0,Math.PI*2);
+    ctx.ellipse(0,28,28,8,0,0,Math.PI*2);
     ctx.fill();
-    // legs
-    ctx.fillStyle = '#2b3550';
-    roundRect(ctx,-14,10,10,18,3); ctx.fill();
-    roundRect(ctx,4,10,10,18,3); ctx.fill();
-    // torso
-    ctx.fillStyle = '#4a5a7a';
-    roundRect(ctx,-18,-14,36,30,8); ctx.fill();
-    // arms
-    ctx.fillStyle = '#3f4d68';
-    roundRect(ctx,-25,-8,8,20,3); ctx.fill();
-    roundRect(ctx,17,-8,8,20,3); ctx.fill();
-    // shoulder plates
-    ctx.fillStyle = '#5c6d90';
-    ctx.beginPath(); ctx.ellipse(-20,-10,8,10,0,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(20,-10,8,10,0,0,Math.PI*2); ctx.fill();
-    // rifle, held diagonally across the body
-    ctx.save();
-    ctx.translate(16,0);
-    ctx.rotate(-0.5);
+    // tracks (left/right), with simple road-wheel notches for texture
     ctx.fillStyle = '#23262f';
-    roundRect(ctx,-4,-22,8,34,2); ctx.fill();
-    ctx.fillStyle = '#3a3f4d';
-    roundRect(ctx,-6,4,12,8,2); ctx.fill();
-    ctx.restore();
-    // chest plate / COUNT badge
+    roundRect(ctx,-24,-6,9,34,4); ctx.fill();
+    roundRect(ctx,15,-6,9,34,4); ctx.fill();
+    ctx.fillStyle = '#121419';
+    for(let i=0;i<4;i++){
+      const wy = -2 + i*8;
+      ctx.beginPath(); ctx.arc(-19.5,wy,2.6,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(19.5,wy,2.6,0,Math.PI*2); ctx.fill();
+    }
+    // hull
+    ctx.fillStyle = '#4a5a44';
+    roundRect(ctx,-15,-10,30,30,7); ctx.fill();
+    ctx.fillStyle = '#3c4a38';
+    roundRect(ctx,-15,10,30,10,4); ctx.fill();
+    // turret
+    ctx.fillStyle = '#5c6d55';
+    roundRect(ctx,-13,-26,26,20,8); ctx.fill();
+    // three forward-facing gun barrels
+    ctx.fillStyle = '#23262f';
+    roundRect(ctx,-9,-46,4,22,2); ctx.fill();
+    roundRect(ctx,-2,-50,4,26,2); ctx.fill();
+    roundRect(ctx,5,-46,4,22,2); ctx.fill();
+    ctx.fillStyle = '#3a3f38';
+    roundRect(ctx,-10,-27,5,6,2); ctx.fill();
+    roundRect(ctx,-3,-27,5,6,2); ctx.fill();
+    roundRect(ctx,4,-27,5,6,2); ctx.fill();
+    // turret hatch
+    ctx.fillStyle = '#2f382c';
+    ctx.beginPath(); ctx.arc(0,-20,4,0,Math.PI*2); ctx.fill();
+    // COUNT badge on the turret front
     ctx.fillStyle='#3fa9ff';
-    roundRect(ctx,-14,-8,28,18,6); ctx.fill();
+    roundRect(ctx,-12,-14,24,16,5); ctx.fill();
     ctx.fillStyle='#10131f';
-    ctx.font='bold 14px Segoe UI';
+    ctx.font='bold 13px Segoe UI';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(player.count, 0, 1);
-    // head (angular helmet with a twin-eye visor)
-    ctx.fillStyle = '#4a5a7a';
-    roundRect(ctx,-11,-34,22,20,7); ctx.fill();
-    ctx.fillStyle = '#7fe8ff';
-    roundRect(ctx,-7,-28,6,6,2); ctx.fill();
-    roundRect(ctx,1,-28,6,6,2); ctx.fill();
-    // small antenna
-    ctx.strokeStyle = '#4a5a7a';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(0,-34); ctx.lineTo(0,-40); ctx.stroke();
+    ctx.fillText(player.count, 0, -6);
     ctx.restore();
   }
 
