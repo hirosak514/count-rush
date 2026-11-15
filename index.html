@@ -1067,7 +1067,8 @@
       baseSpeed = BASE_SPEED_100 * (devSettings.speedPct/100);
     }
   }
-  applyDevSettingsLive();
+  horizonY = H*(devSettings.cameraTiltPct/100);
+  camDist = devSettings.camDist;
 
   devTrigger.addEventListener('click', openDevPasscode);
   devPassCancel.addEventListener('click', closeDevPasscode);
