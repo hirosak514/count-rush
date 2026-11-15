@@ -577,6 +577,16 @@
         <div class="hint">デフォルト 15.0倍(以前の10倍 ×1.5)。内部の移動距離(速度アップ等のゲームバランス計算には影響しません)に、この倍率を掛けた値が画面表示・スコア・ランキング・ステージ進行度に使われます</div>
       </div>
       <div class="devField">
+        <label>ビーム砲化するCOUNTのしきい値</label>
+        <input type="number" id="devBeamThresholdInput" step="1000" min="1">
+        <div class="hint">デフォルト 100,000。COUNTがこの値を超えると武器がビーム砲(見た目も専用のビームに変化)になります</div>
+      </div>
+      <div class="devField">
+        <label>ビーム砲の威力倍率 (x)</label>
+        <input type="number" id="devBeamDamageMulInput" step="0.1" min="0.1">
+        <div class="hint">デフォルト 1.2倍。ビーム砲化した後、通常の弾の威力計算結果にこの倍率を掛けます</div>
+      </div>
+      <div class="devField">
         <label>ステージごとの列長増加率 (%)</label>
         <input type="number" id="devStageRowLengthInput" step="1" min="0" max="200">
         <div class="hint">デフォルト 20%。ステージが1つ上がるごとに、中央レーンの敵の列の長さ(奥行き方向の密度)がこの割合ずつ増えていきます</div>
@@ -829,7 +839,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 10.0, plate1000Pct: 4.0, bulletDamageDiv: 96610.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 10.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 0.6, cameraTiltPct: 1.0, camDist: 300.0, droneHitLifeLossMul: 1.5, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 30.0, bombBossDamagePct: 50.0, bossKillHealPct: 100.0 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 10.0, plate1000Pct: 4.0, bulletDamageDiv: 96610.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 10.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 0.6, cameraTiltPct: 1.0, camDist: 300.0, droneHitLifeLossMul: 1.5, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 30.0, bombBossDamagePct: 50.0, bossKillHealPct: 100.0, beamModeCountThreshold: 100000, beamDamageMul: 1.2 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -864,6 +874,8 @@
       distanceDisplayMul: (typeof parsed.distanceDisplayMul==='number' && isFinite(parsed.distanceDisplayMul) && parsed.distanceDisplayMul>0) ? parsed.distanceDisplayMul : DEV_DEFAULTS.distanceDisplayMul,
       bombBossDamagePct: (typeof parsed.bombBossDamagePct==='number' && isFinite(parsed.bombBossDamagePct) && parsed.bombBossDamagePct>0 && parsed.bombBossDamagePct<=100) ? parsed.bombBossDamagePct : DEV_DEFAULTS.bombBossDamagePct,
       bossKillHealPct: (typeof parsed.bossKillHealPct==='number' && isFinite(parsed.bossKillHealPct) && parsed.bossKillHealPct>=0) ? parsed.bossKillHealPct : DEV_DEFAULTS.bossKillHealPct,
+      beamModeCountThreshold: (typeof parsed.beamModeCountThreshold==='number' && isFinite(parsed.beamModeCountThreshold) && parsed.beamModeCountThreshold>0) ? parsed.beamModeCountThreshold : DEV_DEFAULTS.beamModeCountThreshold,
+      beamDamageMul: (typeof parsed.beamDamageMul==='number' && isFinite(parsed.beamDamageMul) && parsed.beamDamageMul>0) ? parsed.beamDamageMul : DEV_DEFAULTS.beamDamageMul,
     };
   }
   function loadDevSettings(){
@@ -1162,6 +1174,8 @@
   const devBossLifeLossInput = document.getElementById('devBossLifeLossInput');
   const devSpikePenaltyInput = document.getElementById('devSpikePenaltyInput');
   const devBossKillHealInput = document.getElementById('devBossKillHealInput');
+  const devBeamThresholdInput = document.getElementById('devBeamThresholdInput');
+  const devBeamDamageMulInput = document.getElementById('devBeamDamageMulInput');
   const devBombBossDamageInput = document.getElementById('devBombBossDamageInput');
   const devDistanceDisplayMulInput = document.getElementById('devDistanceDisplayMulInput');
   const devStageRowLengthInput = document.getElementById('devStageRowLengthInput');
@@ -1204,6 +1218,8 @@
     devBossLifeLossInput.value = devSettings.bossHitLifeLossPct;
     devSpikePenaltyInput.value = devSettings.spikePenaltyPct;
     devBossKillHealInput.value = devSettings.bossKillHealPct;
+    devBeamThresholdInput.value = devSettings.beamModeCountThreshold;
+    devBeamDamageMulInput.value = devSettings.beamDamageMul;
     devBombBossDamageInput.value = devSettings.bombBossDamagePct;
     devDistanceDisplayMulInput.value = devSettings.distanceDisplayMul;
     devStageRowLengthInput.value = devSettings.stageRowLengthGrowthPct;
@@ -1264,6 +1280,8 @@
     let bossHitLifeLossPct = parseFloat(devBossLifeLossInput.value);
     let spikePenaltyPct = parseFloat(devSpikePenaltyInput.value);
     let bossKillHealPct = parseFloat(devBossKillHealInput.value);
+    let beamModeCountThreshold = parseFloat(devBeamThresholdInput.value);
+    let beamDamageMul = parseFloat(devBeamDamageMulInput.value);
     let bombBossDamagePct = parseFloat(devBombBossDamageInput.value);
     let distanceDisplayMul = parseFloat(devDistanceDisplayMulInput.value);
     let stageRowLengthGrowthPct = parseFloat(devStageRowLengthInput.value);
@@ -1294,6 +1312,8 @@
     if(!isFinite(bossHitLifeLossPct) || bossHitLifeLossPct<0) bossHitLifeLossPct = DEV_DEFAULTS.bossHitLifeLossPct;
     if(!isFinite(spikePenaltyPct) || spikePenaltyPct<0) spikePenaltyPct = DEV_DEFAULTS.spikePenaltyPct;
     if(!isFinite(bossKillHealPct) || bossKillHealPct<0) bossKillHealPct = DEV_DEFAULTS.bossKillHealPct;
+    if(!isFinite(beamModeCountThreshold) || beamModeCountThreshold<=0) beamModeCountThreshold = DEV_DEFAULTS.beamModeCountThreshold;
+    if(!isFinite(beamDamageMul) || beamDamageMul<=0) beamDamageMul = DEV_DEFAULTS.beamDamageMul;
     if(!isFinite(bombBossDamagePct) || bombBossDamagePct<=0) bombBossDamagePct = DEV_DEFAULTS.bombBossDamagePct;
     if(!isFinite(distanceDisplayMul) || distanceDisplayMul<=0) distanceDisplayMul = DEV_DEFAULTS.distanceDisplayMul;
     if(!isFinite(stageRowLengthGrowthPct) || stageRowLengthGrowthPct<0) stageRowLengthGrowthPct = DEV_DEFAULTS.stageRowLengthGrowthPct;
@@ -1325,6 +1345,8 @@
     bossHitLifeLossPct = Math.max(0, Math.min(100, bossHitLifeLossPct));
     spikePenaltyPct = Math.max(0, Math.min(100, spikePenaltyPct));
     bossKillHealPct = Math.max(0, Math.min(200, bossKillHealPct));
+    beamModeCountThreshold = Math.max(1, beamModeCountThreshold);
+    beamDamageMul = Math.max(0.1, beamDamageMul);
     bombBossDamagePct = Math.max(1, Math.min(100, bombBossDamagePct));
     distanceDisplayMul = Math.round(Math.max(0.1, distanceDisplayMul) * 10) / 10;
     stageRowLengthGrowthPct = Math.max(0, Math.min(200, stageRowLengthGrowthPct));
@@ -1344,7 +1366,7 @@
     plateLifetimeSec = Math.max(0.1, Math.min(30, plateLifetimeSec));
     cameraTiltPct = Math.max(1, Math.min(50, cameraTiltPct));
     camDistVal = Math.max(20, Math.min(500, camDistVal));
-    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal, droneHitLifeLossMul, bossHitLifeLossPct, spikePenaltyPct, stageRowLengthGrowthPct, stageBossRateGrowthPct, distanceDisplayMul, bombBossDamagePct, bossKillHealPct };
+    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal, droneHitLifeLossMul, bossHitLifeLossPct, spikePenaltyPct, stageRowLengthGrowthPct, stageBossRateGrowthPct, distanceDisplayMul, bombBossDamagePct, bossKillHealPct, beamModeCountThreshold, beamDamageMul };
     persistDevSettings(devSettings);
     applyDevSettingsLive();
     ensureAudio();
@@ -1364,6 +1386,8 @@
     devBossLifeLossInput.value = devSettings.bossHitLifeLossPct;
     devSpikePenaltyInput.value = devSettings.spikePenaltyPct;
     devBossKillHealInput.value = devSettings.bossKillHealPct;
+    devBeamThresholdInput.value = devSettings.beamModeCountThreshold;
+    devBeamDamageMulInput.value = devSettings.beamDamageMul;
     devBombBossDamageInput.value = devSettings.bombBossDamagePct;
     devDistanceDisplayMulInput.value = devSettings.distanceDisplayMul;
     devStageRowLengthInput.value = devSettings.stageRowLengthGrowthPct;
@@ -2139,7 +2163,11 @@
     // produces fractional per-hit damage (hp/capacity just count down more slowly), instead of
     // always being rounded back up to at least 1 regardless of how low the dial is turned.
     const dmgGrowth = Math.pow(devSettings.dmgGrowthCoef, milestones);
-    const dmg = (player.count/devSettings.bulletDamageDiv) * dmgGrowth * devSettings.dmgLevel;
+    // Beam cannon: once COUNT passes devSettings.beamModeCountThreshold, the weapon switches
+    // to a beam (visually a glowing bolt, see render()) and hits devSettings.beamDamageMul
+    // times harder than a normal bullet would at the same COUNT.
+    const isBeamMode = player.count > devSettings.beamModeCountThreshold;
+    const dmg = (player.count/devSettings.bulletDamageDiv) * dmgGrowth * devSettings.dmgLevel * (isBeamMode ? devSettings.beamDamageMul : 1);
     // multishot: COUNT past a threshold fires extra bullets per shot (not just faster shots),
     // capped at DRONE_COLS since a center-lane row only has that many columns to hit anyway.
     const MULTISHOT_PER_COUNT = 40;
@@ -2148,7 +2176,7 @@
       fireTimer = Math.max(0.02, fireRate);
       const lane = Math.round(player.lane);
       for(let i=0; i<shotCount; i++){
-        bullets.push({d:0, lane, dmg, weaveSeed: Math.random()*Math.PI*2});
+        bullets.push({d:0, lane, dmg, weaveSeed: Math.random()*Math.PI*2, beam: isBeamMode});
       }
       playShot();
     }
@@ -2753,10 +2781,27 @@
     bullets.forEach(b=>{
       const p = project(b.d);
       const cx = screenFlatX(bulletFlatX(b),p.scale);
-      ctx.fillStyle = '#ffd23f';
-      ctx.beginPath();
-      ctx.ellipse(cx,p.y,Math.max(1.5,4*p.scale),Math.max(3,10*p.scale),0,0,Math.PI*2);
-      ctx.fill();
+      if(b.beam){
+        // beam-cannon mode (COUNT past devSettings.beamModeCountThreshold): a longer, glowing
+        // cyan/white bolt instead of the normal small yellow bullet
+        ctx.save();
+        ctx.shadowColor = '#7fe8ff';
+        ctx.shadowBlur = 10*p.scale;
+        ctx.fillStyle = '#eafcff';
+        ctx.beginPath();
+        ctx.ellipse(cx,p.y,Math.max(2,5*p.scale),Math.max(6,22*p.scale),0,0,Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(63,169,255,0.55)';
+        ctx.beginPath();
+        ctx.ellipse(cx,p.y,Math.max(3,8*p.scale),Math.max(9,32*p.scale),0,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      } else {
+        ctx.fillStyle = '#ffd23f';
+        ctx.beginPath();
+        ctx.ellipse(cx,p.y,Math.max(1.5,4*p.scale),Math.max(3,10*p.scale),0,0,Math.PI*2);
+        ctx.fill();
+      }
     });
 
     drawPlayer();
