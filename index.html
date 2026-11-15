@@ -521,7 +521,22 @@
       <div class="devField">
         <label>敵・アイテムの出現位置を奥へ (%)</label>
         <input type="number" id="devSpawnDepthUpInput" step="1" min="-90" max="300">
-        <div class="hint">デフォルト 20%。敵やアイテムが出現する奥行き位置をこの割合だけ増やし、画面上で出現位置を上(奥)にずらします。負の値にすると逆に手前(下)にずれます</div>
+        <div class="hint">デフォルト 200%。敵やアイテムが出現する奥行き位置をこの割合だけ増やし、画面上で出現位置を上(奥)にずらします。負の値にすると逆に手前(下)にずれます</div>
+      </div>
+      <div class="devField">
+        <label>左右アイテムの滞留時間 (秒)</label>
+        <input type="number" id="devPlateLifetimeInput" step="0.1" min="0.1" max="30">
+        <div class="hint">デフォルト 2.0秒。左右レーンの板アイテムが画面下に到達してから、取得されなくてもこの秒数が経つと自動的に消えます</div>
+      </div>
+      <div class="devField">
+        <label>カメラのあおり角度 (水平線位置 %)</label>
+        <input type="number" id="devCameraTiltInput" step="0.5" min="1" max="50">
+        <div class="hint">デフォルト 4%。画面の高さに対する水平線の位置(上端からの割合)。小さいほど水平線が画面上端に近づき、見下ろす角度が強い「あおり」になります</div>
+      </div>
+      <div class="devField">
+        <label>カメラの遠近感 (camDist)</label>
+        <input type="number" id="devCamDistInput" step="5" min="20" max="500">
+        <div class="hint">デフォルト 160。小さいほど近いものと遠いものの大きさの差が大きくなり、遠近感が強く(=あおり角度も強く)見えます</div>
       </div>
       <div class="devField">
         <label>弾の発射音</label>
@@ -628,10 +643,13 @@
   // smaller SPAWN_D_* values below, items now read as noticeably large/close as soon as they
   // appear (around the lower half of the screen), while the horizon stays high for the
   // overhead look.
-  const horizonY = H*0.04;
+  // horizonY and camDist are dev-adjustable (devSettings.cameraTiltPct / devSettings.camDist)
+  // and are kept in sync with devSettings by applyDevSettingsLive() below - these are just
+  // placeholder initial values until devSettings loads.
+  let horizonY = H*0.04;
   const playerRowY = H-120;
   const vanishX = W/2;
-  const camDist = 160; // smaller = steeper falloff = bigger size difference between near and far items (more pronounced depth cue)
+  let camDist = 160; // smaller = steeper falloff = bigger size difference between near and far items (more pronounced depth cue)
 
   function laneCenterX(lane){ // position at the near (player) row, full width
     return lane*laneW + laneW/2;
@@ -682,7 +700,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, bgmVariant: 2, fireInterval: 10.0, dmgLevel: 0.4, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 20.0 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, bgmVariant: 2, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 2.0, cameraTiltPct: 4.0, camDist: 160.0 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -707,6 +725,9 @@
       plate5000SpeedThreshold: (typeof parsed.plate5000SpeedThreshold==='number' && isFinite(parsed.plate5000SpeedThreshold) && parsed.plate5000SpeedThreshold>0) ? parsed.plate5000SpeedThreshold : DEV_DEFAULTS.plate5000SpeedThreshold,
       rowDensityGrowthPct: (typeof parsed.rowDensityGrowthPct==='number' && isFinite(parsed.rowDensityGrowthPct) && parsed.rowDensityGrowthPct>=0) ? parsed.rowDensityGrowthPct : DEV_DEFAULTS.rowDensityGrowthPct,
       spawnDepthUpPct: (typeof parsed.spawnDepthUpPct==='number' && isFinite(parsed.spawnDepthUpPct) && parsed.spawnDepthUpPct>=-90) ? parsed.spawnDepthUpPct : DEV_DEFAULTS.spawnDepthUpPct,
+      plateLifetimeSec: (typeof parsed.plateLifetimeSec==='number' && isFinite(parsed.plateLifetimeSec) && parsed.plateLifetimeSec>0) ? parsed.plateLifetimeSec : DEV_DEFAULTS.plateLifetimeSec,
+      cameraTiltPct: (typeof parsed.cameraTiltPct==='number' && isFinite(parsed.cameraTiltPct) && parsed.cameraTiltPct>0) ? parsed.cameraTiltPct : DEV_DEFAULTS.cameraTiltPct,
+      camDist: (typeof parsed.camDist==='number' && isFinite(parsed.camDist) && parsed.camDist>0) ? parsed.camDist : DEV_DEFAULTS.camDist,
     };
   }
   function loadDevSettings(){
@@ -993,6 +1014,9 @@
   const devPlate5000ThresholdInput = document.getElementById('devPlate5000ThresholdInput');
   const devRowDensityInput = document.getElementById('devRowDensityInput');
   const devSpawnDepthUpInput = document.getElementById('devSpawnDepthUpInput');
+  const devPlateLifetimeInput = document.getElementById('devPlateLifetimeInput');
+  const devCameraTiltInput = document.getElementById('devCameraTiltInput');
+  const devCamDistInput = document.getElementById('devCamDistInput');
   const devShotSoundSelect = document.getElementById('devShotSoundSelect');
   const devBgmSelect = document.getElementById('devBgmSelect');
   const devPanelSave = document.getElementById('devPanelSave');
@@ -1025,6 +1049,9 @@
     devPlate5000ThresholdInput.value = devSettings.plate5000SpeedThreshold;
     devRowDensityInput.value = devSettings.rowDensityGrowthPct;
     devSpawnDepthUpInput.value = devSettings.spawnDepthUpPct;
+    devPlateLifetimeInput.value = devSettings.plateLifetimeSec;
+    devCameraTiltInput.value = devSettings.cameraTiltPct;
+    devCamDistInput.value = devSettings.camDist;
     devShotSoundSelect.value = String(devSettings.soundVariant);
     devBgmSelect.value = String(devSettings.bgmVariant);
     devPanelModal.style.display = 'flex';
@@ -1032,11 +1059,15 @@
   function closeDevPanel(){ devPanelModal.style.display = 'none'; }
 
   function applyDevSettingsLive(){
+    // camera angle/perspective - safe to update any time, even mid-run
+    horizonY = H*(devSettings.cameraTiltPct/100);
+    camDist = devSettings.camDist;
     // apply immediately to a run in progress, if any
     if(player){
       baseSpeed = BASE_SPEED_100 * (devSettings.speedPct/100);
     }
   }
+  applyDevSettingsLive();
 
   devTrigger.addEventListener('click', openDevPasscode);
   devPassCancel.addEventListener('click', closeDevPasscode);
@@ -1070,6 +1101,9 @@
     let plate5000SpeedThreshold = parseFloat(devPlate5000ThresholdInput.value);
     let rowDensityGrowthPct = parseFloat(devRowDensityInput.value);
     let spawnDepthUpPct = parseFloat(devSpawnDepthUpInput.value);
+    let plateLifetimeSec = parseFloat(devPlateLifetimeInput.value);
+    let cameraTiltPct = parseFloat(devCameraTiltInput.value);
+    let camDistVal = parseFloat(devCamDistInput.value);
     let soundVariant = parseInt(devShotSoundSelect.value, 10);
     let bgmVariant = parseInt(devBgmSelect.value, 10);
     if(!isFinite(pct) || pct<=0) pct = DEV_DEFAULTS.speedPct;
@@ -1090,6 +1124,9 @@
     if(!isFinite(plate5000SpeedThreshold) || plate5000SpeedThreshold<=0) plate5000SpeedThreshold = DEV_DEFAULTS.plate5000SpeedThreshold;
     if(!isFinite(rowDensityGrowthPct) || rowDensityGrowthPct<0) rowDensityGrowthPct = DEV_DEFAULTS.rowDensityGrowthPct;
     if(!isFinite(spawnDepthUpPct) || spawnDepthUpPct<-90) spawnDepthUpPct = DEV_DEFAULTS.spawnDepthUpPct;
+    if(!isFinite(plateLifetimeSec) || plateLifetimeSec<=0) plateLifetimeSec = DEV_DEFAULTS.plateLifetimeSec;
+    if(!isFinite(cameraTiltPct) || cameraTiltPct<=0) cameraTiltPct = DEV_DEFAULTS.cameraTiltPct;
+    if(!isFinite(camDistVal) || camDistVal<=0) camDistVal = DEV_DEFAULTS.camDist;
     if(!Number.isInteger(soundVariant) || soundVariant<0 || soundVariant>4) soundVariant = DEV_DEFAULTS.soundVariant;
     if(!Number.isInteger(bgmVariant) || bgmVariant<0 || bgmVariant>4) bgmVariant = DEV_DEFAULTS.bgmVariant;
     pct = Math.max(10, Math.min(500, pct));
@@ -1111,8 +1148,11 @@
     plate5000SpeedThreshold = Math.max(1, Math.min(50, plate5000SpeedThreshold));
     rowDensityGrowthPct = Math.max(0, Math.min(100, rowDensityGrowthPct));
     spawnDepthUpPct = Math.max(-90, Math.min(300, spawnDepthUpPct));
+    plateLifetimeSec = Math.max(0.1, Math.min(30, plateLifetimeSec));
+    cameraTiltPct = Math.max(1, Math.min(50, cameraTiltPct));
+    camDistVal = Math.max(20, Math.min(500, camDistVal));
     const bgmChanged = bgmVariant !== devSettings.bgmVariant;
-    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, bgmVariant, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct };
+    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, bgmVariant, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal };
     persistDevSettings(devSettings);
     applyDevSettingsLive();
     ensureAudio();
@@ -1141,6 +1181,9 @@
     devPlate5000ThresholdInput.value = devSettings.plate5000SpeedThreshold;
     devRowDensityInput.value = devSettings.rowDensityGrowthPct;
     devSpawnDepthUpInput.value = devSettings.spawnDepthUpPct;
+    devPlateLifetimeInput.value = devSettings.plateLifetimeSec;
+    devCameraTiltInput.value = devSettings.cameraTiltPct;
+    devCamDistInput.value = devSettings.camDist;
     devShotSoundSelect.value = String(devSettings.soundVariant);
     devBgmSelect.value = String(devSettings.bgmVariant);
     applyDevSettingsLive();
@@ -1670,11 +1713,11 @@
     // a bonus bomb occasionally takes the place of the "1" plate (devSettings.bombPct, independent
     // of the 99/300/1000 roll above) - picking it up stocks a bomb the player can drop later.
     if(Math.random() < Math.max(0, devSettings.bombPct)/100){
-      items.push({type:'bombPlate', lane:laneSmall, d:spawnD(SPAWN_D_PLATE), baseH:40, dead:false});
+      items.push({type:'bombPlate', lane:laneSmall, d:spawnD(SPAWN_D_PLATE), baseH:40, dead:false, groundT:0});
     } else {
-      items.push({type:'plate', lane:laneSmall, d:spawnD(SPAWN_D_PLATE), baseH:40, value:1, dead:false});
+      items.push({type:'plate', lane:laneSmall, d:spawnD(SPAWN_D_PLATE), baseH:40, value:1, dead:false, groundT:0});
     }
-    items.push({type:'plate', lane:laneBig, d:spawnD(SPAWN_D_PLATE), baseH:40, value: bigVal, dead:false});
+    items.push({type:'plate', lane:laneBig, d:spawnD(SPAWN_D_PLATE), baseH:40, value: bigVal, dead:false, groundT:0});
   }
 
   const SPAWN_D_SPIKE = 85;
@@ -1989,8 +2032,13 @@
     for(const it of items){
       if(it.dead) continue;
       if(it.type==='plate'){
+        // once it reaches the bottom (player row) it stops advancing meaningfully and would
+        // otherwise sit there indefinitely still available to shoot - time it out instead
+        // (devSettings.plateLifetimeSec), with the old depth-based despawn kept as a backstop.
+        if(it.d <= 0){ it.groundT = (it.groundT||0) + dt; if(it.groundT >= devSettings.plateLifetimeSec) it.dead = true; }
         if(it.d <= -40) it.dead = true;
       } else if(it.type==='bombPlate'){
+        if(it.d <= 0){ it.groundT = (it.groundT||0) + dt; if(it.groundT >= devSettings.plateLifetimeSec) it.dead = true; }
         if(it.d <= -40) it.dead = true; // passes by harmlessly if missed
       } else if(it.type==='spike'){
         if(it.d <= 0){
