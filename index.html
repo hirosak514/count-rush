@@ -2436,21 +2436,47 @@
     // no instant wipes. Pick the row the bullet has just reached, then whichever column in
     // that row sits closest to the bullet's current weaved position, so it visually looks
     // like the bullet's own path is what picked off that enemy.
+    //
+    // This used to scan the full items array per bullet (twice - once to find the target row,
+    // once to find the best column within it), which is O(bullets x items). That's cheap in
+    // the side lanes (few items at once) but gets very expensive in the center lane once both
+    // the drone swarm and multishot bullet counts grow large (COUNT raises both the fire rate
+    // and the shots-per-volley up to DRONE_COLS at once). Instead, bucket the live drones by
+    // row once per frame - every drone in the same row decrements by the exact same per-frame
+    // formula (see the it.d-=... line above), so they stay exactly equal in d for their whole
+    // life, making "row" and "distinct d value" the same thing - then walk the bullets against
+    // an advancing row pointer. This produces the exact same result as before (the original
+    // rule was "the minimum-d row that's still <= b.d", and since rows are visited in
+    // ascending-d order via the pointer, the first non-exhausted row at or below b.d IS that
+    // minimum), just in roughly O(items + bullets) instead of O(items x bullets).
+    const droneRowMap = new Map(); // d -> array of live drone items at that depth (a "row")
+    for(const it of items){
+      if(it.type==='drone' && !it.dead){
+        let list = droneRowMap.get(it.d);
+        if(!list){ list = []; droneRowMap.set(it.d, list); }
+        list.push(it);
+      }
+    }
+    const droneRows = [...droneRowMap.entries()].sort((a,b)=> a[0]-b[0]); // ascending by depth
+    let rowIdx = 0;
     for(const b of bullets){
       if(b.d<0 || b.lane!==1) continue;
-      let targetD = Infinity;
-      for(const it of items){ if(it.type==='drone' && !it.dead && it.d<=b.d && it.d<targetD) targetD = it.d; }
-      if(targetD===Infinity) continue;
+      while(rowIdx < droneRows.length && droneRows[rowIdx][1].length===0) rowIdx++;
+      if(rowIdx >= droneRows.length) continue; // no drones left anywhere
+      const rowD = droneRows[rowIdx][0], rowList = droneRows[rowIdx][1];
+      if(b.d < rowD) continue; // bullet hasn't reached the frontmost remaining row yet
       const bx = bulletFlatX(b);
-      let best=null, bestDist=Infinity;
-      for(const it of items){
-        if(it.type==='drone' && !it.dead && it.d===targetD){
-          const colX = laneBoundary1 + (it.col+0.5)*(laneW/DRONE_COLS);
-          const dx = Math.abs(colX - bx);
-          if(dx<bestDist){ bestDist=dx; best=it; }
-        }
+      let bestI=-1, bestDist=Infinity;
+      for(let i=0;i<rowList.length;i++){
+        const colX = laneBoundary1 + (rowList[i].col+0.5)*(laneW/DRONE_COLS);
+        const dx = Math.abs(colX - bx);
+        if(dx<bestDist){ bestDist=dx; bestI=i; }
       }
-      if(best){ best.dead = true; b.d = -999; }
+      if(bestI>=0){
+        rowList[bestI].dead = true;
+        rowList.splice(bestI,1);
+        b.d = -999;
+      }
     }
     bullets = bullets.filter(b=> b.d > -500);
 
