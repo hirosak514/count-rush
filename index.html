@@ -557,6 +557,11 @@
         <div class="hint">デフォルト 10%。とげ床を踏むとCOUNT(仲間の数)がこの割合分だけ減ります。※現状これはライフバーではなくCOUNTを減らす仕組みです</div>
       </div>
       <div class="devField">
+        <label>爆弾がボスに与えるダメージ (%)</label>
+        <input type="number" id="devBombBossDamageInput" step="1" min="1" max="100">
+        <div class="hint">デフォルト 50%。爆弾を1発使うと、ボスの最大HPに対してこの割合分のダメージを与えます(HPが0になるまで倒れません。高HPのボスは1発で倒せないことがあります)</div>
+      </div>
+      <div class="devField">
         <label>獲得距離の表示倍率 (x)</label>
         <input type="number" id="devDistanceDisplayMulInput" step="0.1" min="0.1">
         <div class="hint">デフォルト 15.0倍(以前の10倍 ×1.5)。内部の移動距離(速度アップ等のゲームバランス計算には影響しません)に、この倍率を掛けた値が画面表示・スコア・ランキング・ステージ進行度に使われます</div>
@@ -814,7 +819,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 2.0, cameraTiltPct: 4.0, camDist: 160.0, droneHitLifeLossMul: 1.0, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 15.0 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 2.0, cameraTiltPct: 4.0, camDist: 160.0, droneHitLifeLossMul: 1.0, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 15.0, bombBossDamagePct: 50.0 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -847,6 +852,7 @@
       stageRowLengthGrowthPct: (typeof parsed.stageRowLengthGrowthPct==='number' && isFinite(parsed.stageRowLengthGrowthPct) && parsed.stageRowLengthGrowthPct>=0) ? parsed.stageRowLengthGrowthPct : DEV_DEFAULTS.stageRowLengthGrowthPct,
       stageBossRateGrowthPct: (typeof parsed.stageBossRateGrowthPct==='number' && isFinite(parsed.stageBossRateGrowthPct) && parsed.stageBossRateGrowthPct>=0) ? parsed.stageBossRateGrowthPct : DEV_DEFAULTS.stageBossRateGrowthPct,
       distanceDisplayMul: (typeof parsed.distanceDisplayMul==='number' && isFinite(parsed.distanceDisplayMul) && parsed.distanceDisplayMul>0) ? parsed.distanceDisplayMul : DEV_DEFAULTS.distanceDisplayMul,
+      bombBossDamagePct: (typeof parsed.bombBossDamagePct==='number' && isFinite(parsed.bombBossDamagePct) && parsed.bombBossDamagePct>0 && parsed.bombBossDamagePct<=100) ? parsed.bombBossDamagePct : DEV_DEFAULTS.bombBossDamagePct,
     };
   }
   function loadDevSettings(){
@@ -1144,6 +1150,7 @@
   const devDroneLifeLossInput = document.getElementById('devDroneLifeLossInput');
   const devBossLifeLossInput = document.getElementById('devBossLifeLossInput');
   const devSpikePenaltyInput = document.getElementById('devSpikePenaltyInput');
+  const devBombBossDamageInput = document.getElementById('devBombBossDamageInput');
   const devDistanceDisplayMulInput = document.getElementById('devDistanceDisplayMulInput');
   const devStageRowLengthInput = document.getElementById('devStageRowLengthInput');
   const devStageBossRateInput = document.getElementById('devStageBossRateInput');
@@ -1184,6 +1191,7 @@
     devDroneLifeLossInput.value = devSettings.droneHitLifeLossMul;
     devBossLifeLossInput.value = devSettings.bossHitLifeLossPct;
     devSpikePenaltyInput.value = devSettings.spikePenaltyPct;
+    devBombBossDamageInput.value = devSettings.bombBossDamagePct;
     devDistanceDisplayMulInput.value = devSettings.distanceDisplayMul;
     devStageRowLengthInput.value = devSettings.stageRowLengthGrowthPct;
     devStageBossRateInput.value = devSettings.stageBossRateGrowthPct;
@@ -1242,6 +1250,7 @@
     let droneHitLifeLossMul = parseFloat(devDroneLifeLossInput.value);
     let bossHitLifeLossPct = parseFloat(devBossLifeLossInput.value);
     let spikePenaltyPct = parseFloat(devSpikePenaltyInput.value);
+    let bombBossDamagePct = parseFloat(devBombBossDamageInput.value);
     let distanceDisplayMul = parseFloat(devDistanceDisplayMulInput.value);
     let stageRowLengthGrowthPct = parseFloat(devStageRowLengthInput.value);
     let stageBossRateGrowthPct = parseFloat(devStageBossRateInput.value);
@@ -1270,6 +1279,7 @@
     if(!isFinite(droneHitLifeLossMul) || droneHitLifeLossMul<0) droneHitLifeLossMul = DEV_DEFAULTS.droneHitLifeLossMul;
     if(!isFinite(bossHitLifeLossPct) || bossHitLifeLossPct<0) bossHitLifeLossPct = DEV_DEFAULTS.bossHitLifeLossPct;
     if(!isFinite(spikePenaltyPct) || spikePenaltyPct<0) spikePenaltyPct = DEV_DEFAULTS.spikePenaltyPct;
+    if(!isFinite(bombBossDamagePct) || bombBossDamagePct<=0) bombBossDamagePct = DEV_DEFAULTS.bombBossDamagePct;
     if(!isFinite(distanceDisplayMul) || distanceDisplayMul<=0) distanceDisplayMul = DEV_DEFAULTS.distanceDisplayMul;
     if(!isFinite(stageRowLengthGrowthPct) || stageRowLengthGrowthPct<0) stageRowLengthGrowthPct = DEV_DEFAULTS.stageRowLengthGrowthPct;
     if(!isFinite(stageBossRateGrowthPct) || stageBossRateGrowthPct<0) stageBossRateGrowthPct = DEV_DEFAULTS.stageBossRateGrowthPct;
@@ -1299,6 +1309,7 @@
     droneHitLifeLossMul = Math.max(0, Math.min(10, droneHitLifeLossMul));
     bossHitLifeLossPct = Math.max(0, Math.min(100, bossHitLifeLossPct));
     spikePenaltyPct = Math.max(0, Math.min(100, spikePenaltyPct));
+    bombBossDamagePct = Math.max(1, Math.min(100, bombBossDamagePct));
     distanceDisplayMul = Math.round(Math.max(0.1, distanceDisplayMul) * 10) / 10;
     stageRowLengthGrowthPct = Math.max(0, Math.min(200, stageRowLengthGrowthPct));
     stageBossRateGrowthPct = Math.max(0, Math.min(200, stageBossRateGrowthPct));
@@ -1317,7 +1328,7 @@
     plateLifetimeSec = Math.max(0.1, Math.min(30, plateLifetimeSec));
     cameraTiltPct = Math.max(1, Math.min(50, cameraTiltPct));
     camDistVal = Math.max(20, Math.min(500, camDistVal));
-    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal, droneHitLifeLossMul, bossHitLifeLossPct, spikePenaltyPct, stageRowLengthGrowthPct, stageBossRateGrowthPct, distanceDisplayMul };
+    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal, droneHitLifeLossMul, bossHitLifeLossPct, spikePenaltyPct, stageRowLengthGrowthPct, stageBossRateGrowthPct, distanceDisplayMul, bombBossDamagePct };
     persistDevSettings(devSettings);
     applyDevSettingsLive();
     ensureAudio();
@@ -1336,6 +1347,7 @@
     devDroneLifeLossInput.value = devSettings.droneHitLifeLossMul;
     devBossLifeLossInput.value = devSettings.bossHitLifeLossPct;
     devSpikePenaltyInput.value = devSettings.spikePenaltyPct;
+    devBombBossDamageInput.value = devSettings.bombBossDamagePct;
     devDistanceDisplayMulInput.value = devSettings.distanceDisplayMul;
     devStageRowLengthInput.value = devSettings.stageRowLengthGrowthPct;
     devStageBossRateInput.value = devSettings.stageBossRateGrowthPct;
@@ -1775,16 +1787,26 @@
         const flatX = laneW + (it.col+0.5)*cellW;
         spawnParticles(vanishX + (flatX-vanishX), playerRowY, '#ff6a3d', 4);
       } else if(it.type==='bossUnit' && it.hp > 0){
-        it.hp = 0;
-        it.bossDefeated = true;
-        it.dead = true;
+        // a bomb deals a percentage of the boss's max HP (devSettings.bombBossDamagePct,
+        // default 50%) rather than an instant kill - a tough/high-HP boss can survive one bomb
+        const dmg = Math.round(it.maxHp * (devSettings.bombBossDamagePct/100));
+        it.hp -= dmg;
         killed++;
-        const heal = Math.round(it.maxHp*0.22);
-        player.energy = Math.min(player.maxEnergy, player.energy+heal);
-        updateLifeBar();
-        const p = project(it.d);
-        spawnFloatText('LIFE +'+heal, screenX(1,p.scale), p.y-20, '#34e089');
-        spawnParticles(screenX(1,p.scale), p.y, '#34e089', 20);
+        if(it.hp <= 0){
+          it.hp = 0;
+          it.bossDefeated = true;
+          it.dead = true;
+          const heal = Math.round(it.maxHp*0.22);
+          player.energy = Math.min(player.maxEnergy, player.energy+heal);
+          updateLifeBar();
+          const p = project(it.d);
+          spawnFloatText('LIFE +'+heal, screenX(1,p.scale), p.y-20, '#34e089');
+          spawnParticles(screenX(1,p.scale), p.y, '#34e089', 20);
+        } else {
+          const p = project(it.d);
+          spawnFloatText('-'+dmg, screenX(1,p.scale), p.y-20, '#ff6a3d');
+          spawnParticles(screenX(1,p.scale), p.y, '#ff6a3d', 14);
+        }
       }
     }
     spawnFloatText('BOMB!', vanishX, H*0.42, '#ff6a3d');
@@ -2288,12 +2310,13 @@
           droneCollisions.push(it); // handled as one batch crash below, not per-unit
         }
       } else if(it.type==='bossUnit'){
-        // a still-alive boss doesn't disappear on contact - it barrels through and keeps
-        // going, draining life once as it passes (not every frame while overlapping the
-        // player). A defeated boss never reaches here - it already exploded and was
-        // removed the moment its HP hit zero (see the bullet-collision pass above).
+        // a still-alive boss that reaches the player drains life once, then disappears
+        // immediately (it does not linger or pass through). A defeated boss never reaches
+        // here - it already exploded and was removed the moment its HP hit zero (see the
+        // bullet/bomb-collision pass above).
         if(it.d <= 0 && !it.passedPlayer){
           it.passedPlayer = true;
+          it.dead = true;
           const loss = Math.min(player.maxEnergy, Math.round(it.hp * (devSettings.bossHitLifeLossPct/100)));
           player.energy = Math.max(0, player.energy-loss);
           updateLifeBar();
@@ -2307,10 +2330,6 @@
             endGame();
           }
         }
-        // despawn shortly after it's passed fully off-screen (project()'s own floor is
-        // -camDist*0.6; going much past that renders as frozen at the same max-zoom point,
-        // so despawn soon after crossing it instead of lingering there)
-        if(it.d <= -camDist*0.6 - 15) it.dead = true;
       }
     }
     // player crashes into the front of the drone formation: treat everyone who reached the
@@ -2718,25 +2737,25 @@
       ctx.beginPath(); ctx.arc(-19.5,wy,2.6,0,Math.PI*2); ctx.fill();
       ctx.beginPath(); ctx.arc(19.5,wy,2.6,0,Math.PI*2); ctx.fill();
     }
-    // hull
-    ctx.fillStyle = '#4a5a44';
+    // hull (white, with a blue lower skirt)
+    ctx.fillStyle = '#eef3fb';
     roundRect(ctx,-15,-10,30,30,7); ctx.fill();
-    ctx.fillStyle = '#3c4a38';
+    ctx.fillStyle = '#2f6fd1';
     roundRect(ctx,-15,10,30,10,4); ctx.fill();
-    // turret
-    ctx.fillStyle = '#5c6d55';
+    // turret (blue)
+    ctx.fillStyle = '#2f6fd1';
     roundRect(ctx,-13,-26,26,20,8); ctx.fill();
     // three forward-facing gun barrels
     ctx.fillStyle = '#23262f';
     roundRect(ctx,-9,-46,4,22,2); ctx.fill();
     roundRect(ctx,-2,-50,4,26,2); ctx.fill();
     roundRect(ctx,5,-46,4,22,2); ctx.fill();
-    ctx.fillStyle = '#3a3f38';
+    ctx.fillStyle = '#eef3fb';
     roundRect(ctx,-10,-27,5,6,2); ctx.fill();
     roundRect(ctx,-3,-27,5,6,2); ctx.fill();
     roundRect(ctx,4,-27,5,6,2); ctx.fill();
     // turret hatch
-    ctx.fillStyle = '#2f382c';
+    ctx.fillStyle = '#1c4c96';
     ctx.beginPath(); ctx.arc(0,-20,4,0,Math.PI*2); ctx.fill();
     // COUNT badge on the turret front
     ctx.fillStyle='#3fa9ff';
