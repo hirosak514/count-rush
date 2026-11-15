@@ -2312,28 +2312,81 @@
         ctx.arc(cx,y,r,0,Math.PI*2);
         ctx.fill();
       } else if(it.type==='bossUnit'){
+        // kaiju/monster-style redesign: spiky ridge, horns, glowing eyes and a toothy mouth,
+        // in place of the previous plain glowing orb. The HP-fill-from-bottom gauge inside the
+        // body is kept as-is.
         const cx = screenX(1,s);
         const br = Math.max(4, (laneW/3)*s);
         const pct = it.hp/it.maxHp;
         ctx.save();
-        ctx.shadowColor='rgba(255,77,94,0.7)';
+        ctx.shadowColor='rgba(120,220,80,0.6)';
         ctx.shadowBlur=14*s;
         ctx.beginPath();
         ctx.arc(cx,y,br,0,Math.PI*2);
-        ctx.fillStyle = '#2a0a12';
+        ctx.fillStyle = '#17240d';
         ctx.fill();
         ctx.restore();
+        // jagged spiky ridge around the top of the head
+        ctx.save();
+        ctx.fillStyle = '#23330f';
+        const spikeCount = 8;
+        ctx.beginPath();
+        for(let i=0;i<=spikeCount;i++){
+          const a = Math.PI*(1+i/spikeCount); // sweep across the top half
+          const rOuter = br*(i%2===0 ? 1.28 : 1.08);
+          const px = cx + Math.cos(a)*rOuter;
+          const pyy = y + Math.sin(a)*rOuter;
+          if(i===0) ctx.moveTo(px,pyy); else ctx.lineTo(px,pyy);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        // body fill (HP gauge rises from the bottom)
         ctx.save();
         ctx.beginPath();
         ctx.arc(cx,y,br,0,Math.PI*2);
         ctx.clip();
         const grad = ctx.createRadialGradient(cx-br*0.35,y-br*0.35,br*0.15,cx,y,br);
-        grad.addColorStop(0,'#ffb199');
-        grad.addColorStop(0.5,'#c23a1f');
-        grad.addColorStop(1,'#5c1208');
+        grad.addColorStop(0,'#9fdb7a');
+        grad.addColorStop(0.5,'#4f8c2f');
+        grad.addColorStop(1,'#1f4010');
         ctx.fillStyle = grad;
         ctx.fillRect(cx-br, y-br+br*2*(1-pct), br*2, br*2*pct);
         ctx.restore();
+        // horns
+        ctx.fillStyle = '#efe4c0';
+        ctx.beginPath();
+        ctx.moveTo(cx-br*0.5, y-br*0.75);
+        ctx.lineTo(cx-br*0.25, y-br*1.35);
+        ctx.lineTo(cx-br*0.08, y-br*0.68);
+        ctx.closePath(); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(cx+br*0.5, y-br*0.75);
+        ctx.lineTo(cx+br*0.25, y-br*1.35);
+        ctx.lineTo(cx+br*0.08, y-br*0.68);
+        ctx.closePath(); ctx.fill();
+        // glowing eyes
+        ctx.fillStyle = '#fff6a0';
+        ctx.beginPath(); ctx.ellipse(cx-br*0.32, y-br*0.12, br*0.17, br*0.2, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx+br*0.32, y-br*0.12, br*0.17, br*0.2, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#17240d';
+        ctx.beginPath(); ctx.arc(cx-br*0.32, y-br*0.08, br*0.08, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+br*0.32, y-br*0.08, br*0.08, 0, Math.PI*2); ctx.fill();
+        // toothy mouth
+        ctx.fillStyle = '#120a08';
+        roundRect(ctx, cx-br*0.4, y+br*0.25, br*0.8, br*0.32, 4*s); ctx.fill();
+        ctx.fillStyle = '#f5f0e0';
+        const teeth = 5;
+        for(let i=0;i<teeth;i++){
+          const tx = cx-br*0.36 + i*(br*0.72/(teeth-1));
+          ctx.beginPath();
+          ctx.moveTo(tx-br*0.05, y+br*0.25);
+          ctx.lineTo(tx+br*0.05, y+br*0.25);
+          ctx.lineTo(tx, y+br*0.4);
+          ctx.closePath();
+          ctx.fill();
+        }
+        // outline
         ctx.strokeStyle='#ffd23f';
         ctx.lineWidth=Math.max(1,2*s);
         ctx.beginPath(); ctx.arc(cx,y,br,0,Math.PI*2); ctx.stroke();
