@@ -236,7 +236,7 @@
   }
   #pauseBtn, #quitBtn{
     position:absolute;
-    top:96px;
+    top:172px;
     z-index:12;
     background:rgba(0,0,0,0.4);
     border:1px solid rgba(255,255,255,0.25);
@@ -475,7 +475,7 @@
     <p>
       <b style="color:var(--accent2)">左右のレーン</b>には「+1」と「+99」の板がランダムに出現。
       そのレーンに乗って撃つと板が壊れて仲間が増える。<br><br>
-      <b style="color:#bda8ff">中央レーン</b>には歯磨き粉を撃って中身を出し切ると、
+      <b style="color:#bda8ff">中央レーン</b>には<b style="color:#bda8ff">ブドウ</b>を撃って粒を全部弾くと、
       仲間が一気に増える！<br><br>
       <b style="color:var(--danger)">赤い敵の群れ</b>や<b style="color:#ff8a5c">ボス</b>を倒しきれないと
       <b style="color:var(--danger)">LIFE</b>が減る。0になったら終了。<br>
@@ -555,6 +555,11 @@
         <label>とげ床を踏んだ時の減少率 (%)</label>
         <input type="number" id="devSpikePenaltyInput" step="1" min="0" max="100">
         <div class="hint">デフォルト 10%。とげ床を踏むとCOUNT(仲間の数)がこの割合分だけ減ります。※現状これはライフバーではなくCOUNTを減らす仕組みです</div>
+      </div>
+      <div class="devField">
+        <label>獲得距離の表示倍率 (x)</label>
+        <input type="number" id="devDistanceDisplayMulInput" step="0.1" min="0.1">
+        <div class="hint">デフォルト 15.0倍(以前の10倍 ×1.5)。内部の移動距離(速度アップ等のゲームバランス計算には影響しません)に、この倍率を掛けた値が画面表示・スコア・ランキング・ステージ進行度に使われます</div>
       </div>
       <div class="devField">
         <label>ステージごとの列長増加率 (%)</label>
@@ -673,7 +678,7 @@
     <p>
       <b style="color:var(--accent2)">左右のレーン</b>には「+1」と「+99」の板がランダムに出現。
       そのレーンに乗って撃つと板が壊れて仲間が増える。<br><br>
-      <b style="color:#bda8ff">中央レーン</b>には歯磨き粉を撃って中身を出し切ると、
+      <b style="color:#bda8ff">中央レーン</b>には<b style="color:#bda8ff">ブドウ</b>を撃って粒を全部弾くと、
       仲間が一気に増える！<br><br>
       <b style="color:var(--danger)">赤い敵の群れ</b>や<b style="color:#ff8a5c">ボス</b>を倒しきれないと
       <b style="color:var(--danger)">LIFE</b>が減る。0になったら終了。<br>
@@ -749,7 +754,13 @@
     return lane*laneW + laneW/2;
   }
   function project(d){ // d = depth from player (0 = at player, large = far near horizon)
-    const dd = Math.max(0,d);
+    // Every item type except bossUnit is removed the instant d<=0, so they never render with
+    // negative d. A still-alive bossUnit deliberately keeps going past d=0 (it "barrels
+    // through" the player instead of stopping), so negative d has to render as continuing
+    // toward/past the camera (bigger, further down the screen) instead of being clamped to a
+    // single frozen point at the player row. Floor the clamp comfortably short of -camDist so
+    // the scale never blows up or flips sign as dd approaches 0 from below.
+    const dd = Math.max(-camDist*0.6, d);
     const scale = camDist/(camDist+dd);
     return { scale, y: horizonY + scale*(playerRowY-horizonY) };
   }
@@ -803,7 +814,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 2.0, cameraTiltPct: 4.0, camDist: 160.0, droneHitLifeLossMul: 1.0, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 2.0, cameraTiltPct: 4.0, camDist: 160.0, droneHitLifeLossMul: 1.0, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 15.0 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -835,6 +846,7 @@
       spikePenaltyPct: (typeof parsed.spikePenaltyPct==='number' && isFinite(parsed.spikePenaltyPct) && parsed.spikePenaltyPct>=0 && parsed.spikePenaltyPct<=100) ? parsed.spikePenaltyPct : DEV_DEFAULTS.spikePenaltyPct,
       stageRowLengthGrowthPct: (typeof parsed.stageRowLengthGrowthPct==='number' && isFinite(parsed.stageRowLengthGrowthPct) && parsed.stageRowLengthGrowthPct>=0) ? parsed.stageRowLengthGrowthPct : DEV_DEFAULTS.stageRowLengthGrowthPct,
       stageBossRateGrowthPct: (typeof parsed.stageBossRateGrowthPct==='number' && isFinite(parsed.stageBossRateGrowthPct) && parsed.stageBossRateGrowthPct>=0) ? parsed.stageBossRateGrowthPct : DEV_DEFAULTS.stageBossRateGrowthPct,
+      distanceDisplayMul: (typeof parsed.distanceDisplayMul==='number' && isFinite(parsed.distanceDisplayMul) && parsed.distanceDisplayMul>0) ? parsed.distanceDisplayMul : DEV_DEFAULTS.distanceDisplayMul,
     };
   }
   function loadDevSettings(){
@@ -1132,6 +1144,7 @@
   const devDroneLifeLossInput = document.getElementById('devDroneLifeLossInput');
   const devBossLifeLossInput = document.getElementById('devBossLifeLossInput');
   const devSpikePenaltyInput = document.getElementById('devSpikePenaltyInput');
+  const devDistanceDisplayMulInput = document.getElementById('devDistanceDisplayMulInput');
   const devStageRowLengthInput = document.getElementById('devStageRowLengthInput');
   const devStageBossRateInput = document.getElementById('devStageBossRateInput');
   const devPlate300Input = document.getElementById('devPlate300Input');
@@ -1171,6 +1184,7 @@
     devDroneLifeLossInput.value = devSettings.droneHitLifeLossMul;
     devBossLifeLossInput.value = devSettings.bossHitLifeLossPct;
     devSpikePenaltyInput.value = devSettings.spikePenaltyPct;
+    devDistanceDisplayMulInput.value = devSettings.distanceDisplayMul;
     devStageRowLengthInput.value = devSettings.stageRowLengthGrowthPct;
     devStageBossRateInput.value = devSettings.stageBossRateGrowthPct;
     devPlate300Input.value = devSettings.plate300Pct;
@@ -1228,6 +1242,7 @@
     let droneHitLifeLossMul = parseFloat(devDroneLifeLossInput.value);
     let bossHitLifeLossPct = parseFloat(devBossLifeLossInput.value);
     let spikePenaltyPct = parseFloat(devSpikePenaltyInput.value);
+    let distanceDisplayMul = parseFloat(devDistanceDisplayMulInput.value);
     let stageRowLengthGrowthPct = parseFloat(devStageRowLengthInput.value);
     let stageBossRateGrowthPct = parseFloat(devStageBossRateInput.value);
     let plate300Pct = parseFloat(devPlate300Input.value);
@@ -1255,6 +1270,7 @@
     if(!isFinite(droneHitLifeLossMul) || droneHitLifeLossMul<0) droneHitLifeLossMul = DEV_DEFAULTS.droneHitLifeLossMul;
     if(!isFinite(bossHitLifeLossPct) || bossHitLifeLossPct<0) bossHitLifeLossPct = DEV_DEFAULTS.bossHitLifeLossPct;
     if(!isFinite(spikePenaltyPct) || spikePenaltyPct<0) spikePenaltyPct = DEV_DEFAULTS.spikePenaltyPct;
+    if(!isFinite(distanceDisplayMul) || distanceDisplayMul<=0) distanceDisplayMul = DEV_DEFAULTS.distanceDisplayMul;
     if(!isFinite(stageRowLengthGrowthPct) || stageRowLengthGrowthPct<0) stageRowLengthGrowthPct = DEV_DEFAULTS.stageRowLengthGrowthPct;
     if(!isFinite(stageBossRateGrowthPct) || stageBossRateGrowthPct<0) stageBossRateGrowthPct = DEV_DEFAULTS.stageBossRateGrowthPct;
     if(!isFinite(plate300Pct)) plate300Pct = DEV_DEFAULTS.plate300Pct;
@@ -1283,6 +1299,7 @@
     droneHitLifeLossMul = Math.max(0, Math.min(10, droneHitLifeLossMul));
     bossHitLifeLossPct = Math.max(0, Math.min(100, bossHitLifeLossPct));
     spikePenaltyPct = Math.max(0, Math.min(100, spikePenaltyPct));
+    distanceDisplayMul = Math.round(Math.max(0.1, distanceDisplayMul) * 10) / 10;
     stageRowLengthGrowthPct = Math.max(0, Math.min(200, stageRowLengthGrowthPct));
     stageBossRateGrowthPct = Math.max(0, Math.min(200, stageBossRateGrowthPct));
     plate300Pct = Math.max(0, Math.min(100, plate300Pct));
@@ -1300,7 +1317,7 @@
     plateLifetimeSec = Math.max(0.1, Math.min(30, plateLifetimeSec));
     cameraTiltPct = Math.max(1, Math.min(50, cameraTiltPct));
     camDistVal = Math.max(20, Math.min(500, camDistVal));
-    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal, droneHitLifeLossMul, bossHitLifeLossPct, spikePenaltyPct, stageRowLengthGrowthPct, stageBossRateGrowthPct };
+    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal, droneHitLifeLossMul, bossHitLifeLossPct, spikePenaltyPct, stageRowLengthGrowthPct, stageBossRateGrowthPct, distanceDisplayMul };
     persistDevSettings(devSettings);
     applyDevSettingsLive();
     ensureAudio();
@@ -1319,6 +1336,7 @@
     devDroneLifeLossInput.value = devSettings.droneHitLifeLossMul;
     devBossLifeLossInput.value = devSettings.bossHitLifeLossPct;
     devSpikePenaltyInput.value = devSettings.spikePenaltyPct;
+    devDistanceDisplayMulInput.value = devSettings.distanceDisplayMul;
     devStageRowLengthInput.value = devSettings.stageRowLengthGrowthPct;
     devStageBossRateInput.value = devSettings.stageBossRateGrowthPct;
     devPlate300Input.value = devSettings.plate300Pct;
@@ -1403,11 +1421,10 @@
   let distance, elapsed, maxCount;
   // ---------- STAGES ----------
   // distance (raw, internal) still drives the speed-milestone/difficulty pacing exactly as
-  // before. DISTANCE_DISPLAY_MUL only scales the number shown to the player and used for
-  // scoring/ranking/stage-progress, so the underlying game balance is untouched.
-  const DISTANCE_DISPLAY_MUL = 10;
+  // before. devSettings.distanceDisplayMul only scales the number shown to the player and used
+  // for scoring/ranking/stage-progress, so the underlying game balance is untouched.
   const STAGE_DISTANCE_M = 1000; // displayed meters needed to clear a stage
-  function displayDistance(){ return distance*DISTANCE_DISPLAY_MUL; }
+  function displayDistance(){ return distance*devSettings.distanceDisplayMul; }
   let stage, stageStartDistance; // stageStartDistance: raw distance value when the current stage began
   // color palettes for the drone swarm and the boss, cycling once per stage so each stage reads
   // visually distinct
@@ -1990,7 +2007,7 @@
     // Stage clear: once this stage's progress (displayed-scale distance since the stage began)
     // reaches STAGE_DISTANCE_M, pause and show the stage-clear overlay. triggerStageClear() sets
     // isPaused, so update() won't run again until the player presses "next stage".
-    const stageProgressM = (distance-stageStartDistance) * DISTANCE_DISPLAY_MUL;
+    const stageProgressM = (distance-stageStartDistance) * devSettings.distanceDisplayMul;
     if(stageProgressM >= STAGE_DISTANCE_M){
       stageDistValEl.textContent = STAGE_DISTANCE_M;
       stageDistBarInner.style.width = '100%';
@@ -2290,7 +2307,10 @@
             endGame();
           }
         }
-        if(it.d <= -220) it.dead = true; // despawn once it's well behind the player
+        // despawn shortly after it's passed fully off-screen (project()'s own floor is
+        // -camDist*0.6; going much past that renders as frozen at the same max-zoom point,
+        // so despawn soon after crossing it instead of lingering there)
+        if(it.d <= -camDist*0.6 - 15) it.dead = true;
       }
     }
     // player crashes into the front of the drone formation: treat everyone who reached the
