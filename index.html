@@ -557,6 +557,11 @@
         <div class="hint">デフォルト 10%。とげ床を踏むとCOUNT(仲間の数)がこの割合分だけ減ります。※現状これはライフバーではなくCOUNTを減らす仕組みです</div>
       </div>
       <div class="devField">
+        <label>ボス撃破時のライフ回復率 (%)</label>
+        <input type="number" id="devBossKillHealInput" step="1" min="0" max="200">
+        <div class="hint">デフォルト 100%。ボスを倒した時、ボスの最大HPに対してこの割合分だけライフが回復します(100%ならボスの最大HPと同じ量が回復)</div>
+      </div>
+      <div class="devField">
         <label>爆弾がボスに与えるダメージ (%)</label>
         <input type="number" id="devBombBossDamageInput" step="1" min="1" max="100">
         <div class="hint">デフォルト 50%。爆弾を1発使うと、ボスの最大HPに対してこの割合分のダメージを与えます(HPが0になるまで倒れません。高HPのボスは1発で倒せないことがあります)</div>
@@ -819,7 +824,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 2.0, cameraTiltPct: 4.0, camDist: 160.0, droneHitLifeLossMul: 1.0, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 15.0, bombBossDamagePct: 50.0 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 2.0, cameraTiltPct: 4.0, camDist: 160.0, droneHitLifeLossMul: 1.0, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 15.0, bombBossDamagePct: 50.0, bossKillHealPct: 100.0 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -853,6 +858,7 @@
       stageBossRateGrowthPct: (typeof parsed.stageBossRateGrowthPct==='number' && isFinite(parsed.stageBossRateGrowthPct) && parsed.stageBossRateGrowthPct>=0) ? parsed.stageBossRateGrowthPct : DEV_DEFAULTS.stageBossRateGrowthPct,
       distanceDisplayMul: (typeof parsed.distanceDisplayMul==='number' && isFinite(parsed.distanceDisplayMul) && parsed.distanceDisplayMul>0) ? parsed.distanceDisplayMul : DEV_DEFAULTS.distanceDisplayMul,
       bombBossDamagePct: (typeof parsed.bombBossDamagePct==='number' && isFinite(parsed.bombBossDamagePct) && parsed.bombBossDamagePct>0 && parsed.bombBossDamagePct<=100) ? parsed.bombBossDamagePct : DEV_DEFAULTS.bombBossDamagePct,
+      bossKillHealPct: (typeof parsed.bossKillHealPct==='number' && isFinite(parsed.bossKillHealPct) && parsed.bossKillHealPct>=0) ? parsed.bossKillHealPct : DEV_DEFAULTS.bossKillHealPct,
     };
   }
   function loadDevSettings(){
@@ -1150,6 +1156,7 @@
   const devDroneLifeLossInput = document.getElementById('devDroneLifeLossInput');
   const devBossLifeLossInput = document.getElementById('devBossLifeLossInput');
   const devSpikePenaltyInput = document.getElementById('devSpikePenaltyInput');
+  const devBossKillHealInput = document.getElementById('devBossKillHealInput');
   const devBombBossDamageInput = document.getElementById('devBombBossDamageInput');
   const devDistanceDisplayMulInput = document.getElementById('devDistanceDisplayMulInput');
   const devStageRowLengthInput = document.getElementById('devStageRowLengthInput');
@@ -1191,6 +1198,7 @@
     devDroneLifeLossInput.value = devSettings.droneHitLifeLossMul;
     devBossLifeLossInput.value = devSettings.bossHitLifeLossPct;
     devSpikePenaltyInput.value = devSettings.spikePenaltyPct;
+    devBossKillHealInput.value = devSettings.bossKillHealPct;
     devBombBossDamageInput.value = devSettings.bombBossDamagePct;
     devDistanceDisplayMulInput.value = devSettings.distanceDisplayMul;
     devStageRowLengthInput.value = devSettings.stageRowLengthGrowthPct;
@@ -1250,6 +1258,7 @@
     let droneHitLifeLossMul = parseFloat(devDroneLifeLossInput.value);
     let bossHitLifeLossPct = parseFloat(devBossLifeLossInput.value);
     let spikePenaltyPct = parseFloat(devSpikePenaltyInput.value);
+    let bossKillHealPct = parseFloat(devBossKillHealInput.value);
     let bombBossDamagePct = parseFloat(devBombBossDamageInput.value);
     let distanceDisplayMul = parseFloat(devDistanceDisplayMulInput.value);
     let stageRowLengthGrowthPct = parseFloat(devStageRowLengthInput.value);
@@ -1279,6 +1288,7 @@
     if(!isFinite(droneHitLifeLossMul) || droneHitLifeLossMul<0) droneHitLifeLossMul = DEV_DEFAULTS.droneHitLifeLossMul;
     if(!isFinite(bossHitLifeLossPct) || bossHitLifeLossPct<0) bossHitLifeLossPct = DEV_DEFAULTS.bossHitLifeLossPct;
     if(!isFinite(spikePenaltyPct) || spikePenaltyPct<0) spikePenaltyPct = DEV_DEFAULTS.spikePenaltyPct;
+    if(!isFinite(bossKillHealPct) || bossKillHealPct<0) bossKillHealPct = DEV_DEFAULTS.bossKillHealPct;
     if(!isFinite(bombBossDamagePct) || bombBossDamagePct<=0) bombBossDamagePct = DEV_DEFAULTS.bombBossDamagePct;
     if(!isFinite(distanceDisplayMul) || distanceDisplayMul<=0) distanceDisplayMul = DEV_DEFAULTS.distanceDisplayMul;
     if(!isFinite(stageRowLengthGrowthPct) || stageRowLengthGrowthPct<0) stageRowLengthGrowthPct = DEV_DEFAULTS.stageRowLengthGrowthPct;
@@ -1309,6 +1319,7 @@
     droneHitLifeLossMul = Math.max(0, Math.min(10, droneHitLifeLossMul));
     bossHitLifeLossPct = Math.max(0, Math.min(100, bossHitLifeLossPct));
     spikePenaltyPct = Math.max(0, Math.min(100, spikePenaltyPct));
+    bossKillHealPct = Math.max(0, Math.min(200, bossKillHealPct));
     bombBossDamagePct = Math.max(1, Math.min(100, bombBossDamagePct));
     distanceDisplayMul = Math.round(Math.max(0.1, distanceDisplayMul) * 10) / 10;
     stageRowLengthGrowthPct = Math.max(0, Math.min(200, stageRowLengthGrowthPct));
@@ -1328,7 +1339,7 @@
     plateLifetimeSec = Math.max(0.1, Math.min(30, plateLifetimeSec));
     cameraTiltPct = Math.max(1, Math.min(50, cameraTiltPct));
     camDistVal = Math.max(20, Math.min(500, camDistVal));
-    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal, droneHitLifeLossMul, bossHitLifeLossPct, spikePenaltyPct, stageRowLengthGrowthPct, stageBossRateGrowthPct, distanceDisplayMul, bombBossDamagePct };
+    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal, droneHitLifeLossMul, bossHitLifeLossPct, spikePenaltyPct, stageRowLengthGrowthPct, stageBossRateGrowthPct, distanceDisplayMul, bombBossDamagePct, bossKillHealPct };
     persistDevSettings(devSettings);
     applyDevSettingsLive();
     ensureAudio();
@@ -1347,6 +1358,7 @@
     devDroneLifeLossInput.value = devSettings.droneHitLifeLossMul;
     devBossLifeLossInput.value = devSettings.bossHitLifeLossPct;
     devSpikePenaltyInput.value = devSettings.spikePenaltyPct;
+    devBossKillHealInput.value = devSettings.bossKillHealPct;
     devBombBossDamageInput.value = devSettings.bombBossDamagePct;
     devDistanceDisplayMulInput.value = devSettings.distanceDisplayMul;
     devStageRowLengthInput.value = devSettings.stageRowLengthGrowthPct;
@@ -1796,7 +1808,7 @@
           it.hp = 0;
           it.bossDefeated = true;
           it.dead = true;
-          const heal = Math.round(it.maxHp*0.22);
+          const heal = Math.round(it.maxHp*(devSettings.bossKillHealPct/100));
           player.energy = Math.min(player.maxEnergy, player.energy+heal);
           updateLifeBar();
           const p = project(it.d);
@@ -2237,7 +2249,7 @@
             if(it.hp<=0 && !it.bossDefeated){
               it.bossDefeated = true;
               it.dead = true; // shot down - explodes and disappears right away, doesn't linger/pass through
-              const heal = Math.round(it.maxHp*0.22);
+              const heal = Math.round(it.maxHp*(devSettings.bossKillHealPct/100));
               player.energy = Math.min(player.maxEnergy, player.energy+heal);
               updateLifeBar();
               const p = project(it.d);
