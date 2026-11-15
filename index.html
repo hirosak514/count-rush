@@ -2804,108 +2804,54 @@
         ctx.arc(cx,y,r,0,Math.PI*2);
         ctx.fill();
       } else if(it.type==='bossUnit'){
-        // original kaiju/dinosaur-monster redesign (not a depiction of any existing character):
-        // an elongated standing body with a dorsal spike ridge running down the back, horns,
-        // glowing eyes and a toothy mouth. The body is an ellipse rather than a circle - twice
-        // as tall as it is wide - and is anchored so its feet stay on the same ground line the
-        // old circular body used, growing upward for a towering silhouette. The HP-fill-from-
-        // bottom gauge inside the body is kept as-is.
+        // original "banana ghost" redesign (not a depiction of any existing character): a
+        // curved, tapering banana-shaped body with a scalloped ghost-tail bottom instead of
+        // legs, a tiny stem at the tip, and a simple round-eyed ghost face. Keeps the same
+        // overall height/footing as the previous boss design (anchored to the ground line,
+        // growing upward) and the same HP-fill-from-bottom gauge inside the body.
         const cx = screenX(1,s);
         const brH = Math.max(4, (laneW/3)*s);
-        const brV = brH*2; // vertical radius doubled vs. the horizontal radius
-        const groundY = y + brH; // same ground line the old circular body touched
+        const brV = brH*2;
+        const groundY = y + brH; // same ground line earlier boss designs touched
         const cy = groundY - brV; // body grows upward from the ground, not from its old center
         const pct = it.hp/it.maxHp;
         const bpal = stagePalette();
         ctx.save();
         ctx.shadowColor=bpal.bossShadow;
         ctx.shadowBlur=14*s;
-        ctx.beginPath();
-        ctx.ellipse(cx,cy,brH,brV,0,0,Math.PI*2);
+        bananaGhostPath(ctx,cx,cy,brH,brV);
         ctx.fillStyle = bpal.bossBody;
         ctx.fill();
         ctx.restore();
-        // jagged spiky ridge around the top of the head
-        ctx.save();
+        // tiny stem at the banana's tip
         ctx.fillStyle = bpal.bossRidge;
-        const spikeCount = 8;
-        ctx.beginPath();
-        for(let i=0;i<=spikeCount;i++){
-          const a = Math.PI*(1+i/spikeCount); // sweep across the top half
-          const rOuter = i%2===0 ? 1.28 : 1.08;
-          const px = cx + Math.cos(a)*brH*rOuter;
-          const pyy = cy + Math.sin(a)*brV*rOuter;
-          if(i===0) ctx.moveTo(px,pyy); else ctx.lineTo(px,pyy);
-        }
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-        // dorsal spikes running down the back (down the elongated body), kaiju-style
-        ctx.save();
-        ctx.fillStyle = bpal.bossRidge;
-        const backSpikes = 4;
-        for(let i=0;i<backSpikes;i++){
-          const t = (i+1)/(backSpikes+1); // spread down the visible lower/back half of the body
-          const spy = cy + brV*(0.15 + t*0.75);
-          const spw = brH*0.22*(1-t*0.3);
-          const sph = brV*0.22*(1-t*0.2);
-          ctx.beginPath();
-          ctx.moveTo(cx-spw, spy+sph*0.5);
-          ctx.lineTo(cx, spy-sph*0.5);
-          ctx.lineTo(cx+spw, spy+sph*0.5);
-          ctx.closePath();
-          ctx.fill();
-        }
-        ctx.restore();
+        roundRect(ctx, cx-brH*0.12, cy-brV*1.18, brH*0.24, brV*0.18, 2*s); ctx.fill();
         // body fill (HP gauge rises from the bottom)
         ctx.save();
-        ctx.beginPath();
-        ctx.ellipse(cx,cy,brH,brV,0,0,Math.PI*2);
+        bananaGhostPath(ctx,cx,cy,brH,brV);
         ctx.clip();
-        const grad = ctx.createRadialGradient(cx-brH*0.35,cy-brV*0.35,brH*0.15,cx,cy,brV);
+        const grad = ctx.createRadialGradient(cx-brH*0.1,cy-brV*0.3,brH*0.15,cx,cy,brV*1.1);
         grad.addColorStop(0,bpal.bossLight);
         grad.addColorStop(0.5,bpal.bossMid);
         grad.addColorStop(1,bpal.bossDark);
         ctx.fillStyle = grad;
-        ctx.fillRect(cx-brH, cy-brV+brV*2*(1-pct), brH*2, brV*2*pct);
+        ctx.fillRect(cx-brH*1.3, cy-brV*1.1+brV*2.2*(1-pct), brH*2.6, brV*2.2*pct);
         ctx.restore();
-        // horns
-        ctx.fillStyle = '#efe4c0';
-        ctx.beginPath();
-        ctx.moveTo(cx-brH*0.5, cy-brV*0.75);
-        ctx.lineTo(cx-brH*0.25, cy-brV*1.1);
-        ctx.lineTo(cx-brH*0.08, cy-brV*0.68);
-        ctx.closePath(); ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(cx+brH*0.5, cy-brV*0.75);
-        ctx.lineTo(cx+brH*0.25, cy-brV*1.1);
-        ctx.lineTo(cx+brH*0.08, cy-brV*0.68);
-        ctx.closePath(); ctx.fill();
-        // glowing eyes
+        // round ghost eyes
         ctx.fillStyle = '#fff6a0';
-        ctx.beginPath(); ctx.ellipse(cx-brH*0.32, cy-brV*0.12, brH*0.17, brV*0.1, 0, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(cx+brH*0.32, cy-brV*0.12, brH*0.17, brV*0.1, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx-brH*0.18, cy-brV*0.05, brH*0.2, brV*0.12, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx+brH*0.32, cy-brV*0.05, brH*0.2, brV*0.12, 0, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = '#17240d';
-        ctx.beginPath(); ctx.arc(cx-brH*0.32, cy-brV*0.08, brH*0.08, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(cx+brH*0.32, cy-brV*0.08, brH*0.08, 0, Math.PI*2); ctx.fill();
-        // toothy mouth
+        ctx.beginPath(); ctx.arc(cx-brH*0.18, cy, brH*0.09, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+brH*0.32, cy, brH*0.09, 0, Math.PI*2); ctx.fill();
+        // small round open mouth
         ctx.fillStyle = '#120a08';
-        roundRect(ctx, cx-brH*0.4, cy+brV*0.12, brH*0.8, brV*0.16, 4*s); ctx.fill();
-        ctx.fillStyle = '#f5f0e0';
-        const teeth = 5;
-        for(let i=0;i<teeth;i++){
-          const tx = cx-brH*0.36 + i*(brH*0.72/(teeth-1));
-          ctx.beginPath();
-          ctx.moveTo(tx-brH*0.05, cy+brV*0.12);
-          ctx.lineTo(tx+brH*0.05, cy+brV*0.12);
-          ctx.lineTo(tx, cy+brV*0.2);
-          ctx.closePath();
-          ctx.fill();
-        }
+        ctx.beginPath(); ctx.ellipse(cx+brH*0.07, cy+brV*0.28, brH*0.14, brV*0.1, 0, 0, Math.PI*2); ctx.fill();
         // outline
         ctx.strokeStyle='#ffd23f';
         ctx.lineWidth=Math.max(1,2*s);
-        ctx.beginPath(); ctx.ellipse(cx,cy,brH,brV,0,0,Math.PI*2); ctx.stroke();
+        bananaGhostPath(ctx,cx,cy,brH,brV);
+        ctx.stroke();
       } else if(it.type==='bullet'){
         const cx = screenX(it.lane,s);
         ctx.fillStyle = '#ffd23f';
@@ -3038,6 +2984,26 @@
     ctx.arcTo(x+w,y+h,x,y+h,r);
     ctx.arcTo(x,y+h,x,y,r);
     ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  // Original "banana ghost" boss silhouette (not based on any existing character): a curved,
+  // tapering banana-shaped body (pointed stem at top, bulging outer edge, slimmer inner edge)
+  // ending in a wavy, scalloped ghost-tail bottom instead of a banana's rounded tip. Builds the
+  // path only - callers fill/clip/stroke it themselves, so the exact same outline is reused for
+  // the body fill, the HP-gauge clip and the outline stroke.
+  function bananaGhostPath(ctx,cx,cy,brH,brV){
+    ctx.beginPath();
+    ctx.moveTo(cx-brH*0.08, cy-brV*1.05); // stem tip, offset slightly for the banana's curve
+    ctx.quadraticCurveTo(cx+brH*1.25, cy-brV*0.15, cx+brH*0.5, cy+brV*0.78); // bulging outer edge
+    const waves = 4;
+    for(let i=1;i<=waves;i++){
+      const t = i/waves;
+      const wx = cx+brH*0.5 - t*(brH*1.0);
+      const wy = cy+brV*0.78 + (i%2===0 ? brV*0.1 : -brV*0.06); // scalloped ghost-tail bottom
+      ctx.lineTo(wx,wy);
+    }
+    ctx.quadraticCurveTo(cx-brH*0.3, cy-brV*0.15, cx-brH*0.08, cy-brV*1.05); // slimmer inner edge
     ctx.closePath();
   }
 
