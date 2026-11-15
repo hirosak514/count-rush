@@ -155,6 +155,11 @@
     z-index:20;
     padding:24px;
   }
+  #howToOverlay{
+    /* always stacks above every other overlay (title/pause/stage-clear/game-over), regardless
+       of DOM order, since How To Play can be opened from any of those screens */
+    z-index:21;
+  }
   .overlay h1{
     font-size:36px;
     margin:0 0 6px;
@@ -256,7 +261,7 @@
   #howToBtn{
     position:absolute;
     top:8px;left:12px;
-    z-index:12;
+    z-index:25;
     background:rgba(0,0,0,0.4);
     border:1px solid rgba(255,255,255,0.25);
     color:#fff;
@@ -824,7 +829,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 2.0, cameraTiltPct: 4.0, camDist: 160.0, droneHitLifeLossMul: 1.0, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 15.0, bombBossDamagePct: 50.0, bossKillHealPct: 100.0 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 10.0, plate1000Pct: 4.0, bulletDamageDiv: 96610.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 10.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 0.6, cameraTiltPct: 1.0, camDist: 300.0, droneHitLifeLossMul: 1.5, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 30.0, bombBossDamagePct: 50.0, bossKillHealPct: 100.0 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -1728,25 +1733,35 @@
   quitBtn.addEventListener('click', quitToTitle);
   pauseQuitBtn.addEventListener('click', quitToTitle);
 
-  // ---------- HOW TO PLAY (mid-game) ----------
-  // Pressing it mid-run pauses gameplay (reusing the same isPaused flag the regular pause uses)
-  // and shows the rules; closing it resumes exactly where play was paused. From the title
-  // screen (state !== 'playing') it just shows the overlay with nothing to pause/resume.
+  // ---------- HOW TO PLAY (works from any screen) ----------
+  // howToBtn sits above every overlay (z-index 25 > .overlay's 20), so it can be pressed from
+  // the title screen, mid-run, the pause screen, the stage-clear screen, or the game-over
+  // screen. Pressing it mid-run (actively playing, not already paused) pauses gameplay and
+  // shows the rules on top; closing it then resumes exactly where play was paused.
+  // howToPausedByMe tracks whether THIS button is what paused the game, so closing it never
+  // steals control from another overlay that was already pausing things (the regular pause
+  // screen, or the stage-clear screen) - in those cases closing just reveals that overlay
+  // again underneath, still paused, exactly as it was before How To Play was opened.
+  let howToPausedByMe = false;
   howToBtn.addEventListener('click', ()=>{
     if(state === 'playing' && !isPaused){
       isPaused = true;
       stopBGM();
+      howToPausedByMe = true;
+    } else {
+      howToPausedByMe = false;
     }
     howToOverlay.style.display = 'flex';
   });
   howToCloseBtn.addEventListener('click', ()=>{
     howToOverlay.style.display = 'none';
-    if(state === 'playing' && isPaused){
+    if(howToPausedByMe && state === 'playing' && isPaused){
       isPaused = false;
       lastTime = performance.now();
       requestAnimationFrame(loop);
       startBGM();
     }
+    howToPausedByMe = false;
   });
 
   // ---------- STAGES ----------
