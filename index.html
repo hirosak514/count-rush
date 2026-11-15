@@ -474,6 +474,11 @@
         <div class="hint">デフォルト 45%。倒しきれなかったボスがプレイヤーを通過した際、ボスの残り体力に対してこの割合分だけライフが減ります</div>
       </div>
       <div class="devField">
+        <label>とげ床を踏んだ時の減少率 (%)</label>
+        <input type="number" id="devSpikePenaltyInput" step="1" min="0" max="100">
+        <div class="hint">デフォルト 10%。とげ床を踏むとCOUNT(仲間の数)がこの割合分だけ減ります。※現状これはライフバーではなくCOUNTを減らす仕組みです</div>
+      </div>
+      <div class="devField">
         <label>「300」板の出現率 (%)</label>
         <input type="number" id="devPlate300Input" step="1" min="0" max="100">
         <div class="hint">デフォルト 5%。左右レーンの板が「300」になる割合</div>
@@ -699,7 +704,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 2.0, cameraTiltPct: 4.0, camDist: 160.0, droneHitLifeLossMul: 1.0, bossHitLifeLossPct: 45.0 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 2.0, cameraTiltPct: 4.0, camDist: 160.0, droneHitLifeLossMul: 1.0, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -728,6 +733,7 @@
       camDist: (typeof parsed.camDist==='number' && isFinite(parsed.camDist) && parsed.camDist>0) ? parsed.camDist : DEV_DEFAULTS.camDist,
       droneHitLifeLossMul: (typeof parsed.droneHitLifeLossMul==='number' && isFinite(parsed.droneHitLifeLossMul) && parsed.droneHitLifeLossMul>=0) ? parsed.droneHitLifeLossMul : DEV_DEFAULTS.droneHitLifeLossMul,
       bossHitLifeLossPct: (typeof parsed.bossHitLifeLossPct==='number' && isFinite(parsed.bossHitLifeLossPct) && parsed.bossHitLifeLossPct>=0) ? parsed.bossHitLifeLossPct : DEV_DEFAULTS.bossHitLifeLossPct,
+      spikePenaltyPct: (typeof parsed.spikePenaltyPct==='number' && isFinite(parsed.spikePenaltyPct) && parsed.spikePenaltyPct>=0 && parsed.spikePenaltyPct<=100) ? parsed.spikePenaltyPct : DEV_DEFAULTS.spikePenaltyPct,
     };
   }
   function loadDevSettings(){
@@ -1024,6 +1030,7 @@
   const devCollisionRowsInput = document.getElementById('devCollisionRowsInput');
   const devDroneLifeLossInput = document.getElementById('devDroneLifeLossInput');
   const devBossLifeLossInput = document.getElementById('devBossLifeLossInput');
+  const devSpikePenaltyInput = document.getElementById('devSpikePenaltyInput');
   const devPlate300Input = document.getElementById('devPlate300Input');
   const devPlate1000Input = document.getElementById('devPlate1000Input');
   const devBulletDamageDivInput = document.getElementById('devBulletDamageDivInput');
@@ -1060,6 +1067,7 @@
     devCollisionRowsInput.value = devSettings.collisionRows;
     devDroneLifeLossInput.value = devSettings.droneHitLifeLossMul;
     devBossLifeLossInput.value = devSettings.bossHitLifeLossPct;
+    devSpikePenaltyInput.value = devSettings.spikePenaltyPct;
     devPlate300Input.value = devSettings.plate300Pct;
     devPlate1000Input.value = devSettings.plate1000Pct;
     devBulletDamageDivInput.value = devSettings.bulletDamageDiv;
@@ -1114,6 +1122,7 @@
     let collisionRows = parseInt(devCollisionRowsInput.value, 10);
     let droneHitLifeLossMul = parseFloat(devDroneLifeLossInput.value);
     let bossHitLifeLossPct = parseFloat(devBossLifeLossInput.value);
+    let spikePenaltyPct = parseFloat(devSpikePenaltyInput.value);
     let plate300Pct = parseFloat(devPlate300Input.value);
     let plate1000Pct = parseFloat(devPlate1000Input.value);
     let bulletDamageDiv = parseFloat(devBulletDamageDivInput.value);
@@ -1138,6 +1147,7 @@
     if(!Number.isInteger(collisionRows) || collisionRows<1) collisionRows = DEV_DEFAULTS.collisionRows;
     if(!isFinite(droneHitLifeLossMul) || droneHitLifeLossMul<0) droneHitLifeLossMul = DEV_DEFAULTS.droneHitLifeLossMul;
     if(!isFinite(bossHitLifeLossPct) || bossHitLifeLossPct<0) bossHitLifeLossPct = DEV_DEFAULTS.bossHitLifeLossPct;
+    if(!isFinite(spikePenaltyPct) || spikePenaltyPct<0) spikePenaltyPct = DEV_DEFAULTS.spikePenaltyPct;
     if(!isFinite(plate300Pct)) plate300Pct = DEV_DEFAULTS.plate300Pct;
     if(!isFinite(plate1000Pct)) plate1000Pct = DEV_DEFAULTS.plate1000Pct;
     if(!isFinite(bulletDamageDiv) || bulletDamageDiv<=0) bulletDamageDiv = DEV_DEFAULTS.bulletDamageDiv;
@@ -1163,6 +1173,7 @@
     collisionRows = Math.max(1, Math.min(100, collisionRows));
     droneHitLifeLossMul = Math.max(0, Math.min(10, droneHitLifeLossMul));
     bossHitLifeLossPct = Math.max(0, Math.min(100, bossHitLifeLossPct));
+    spikePenaltyPct = Math.max(0, Math.min(100, spikePenaltyPct));
     plate300Pct = Math.max(0, Math.min(100, plate300Pct));
     plate1000Pct = Math.max(0, Math.min(100, plate1000Pct));
     bulletDamageDiv = Math.max(10, Math.min(100000, bulletDamageDiv));
@@ -1178,7 +1189,7 @@
     plateLifetimeSec = Math.max(0.1, Math.min(30, plateLifetimeSec));
     cameraTiltPct = Math.max(1, Math.min(50, cameraTiltPct));
     camDistVal = Math.max(20, Math.min(500, camDistVal));
-    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal, droneHitLifeLossMul, bossHitLifeLossPct };
+    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal, droneHitLifeLossMul, bossHitLifeLossPct, spikePenaltyPct };
     persistDevSettings(devSettings);
     applyDevSettingsLive();
     ensureAudio();
@@ -1196,6 +1207,7 @@
     devCollisionRowsInput.value = devSettings.collisionRows;
     devDroneLifeLossInput.value = devSettings.droneHitLifeLossMul;
     devBossLifeLossInput.value = devSettings.bossHitLifeLossPct;
+    devSpikePenaltyInput.value = devSettings.spikePenaltyPct;
     devPlate300Input.value = devSettings.plate300Pct;
     devPlate1000Input.value = devSettings.plate1000Pct;
     devBulletDamageDivInput.value = devSettings.bulletDamageDiv;
@@ -1705,7 +1717,6 @@
   }
 
   const SPAWN_D_SPIKE = 85;
-  const SPIKE_PENALTY_PCT = 0.10; // 10% of COUNT lost if not avoided
 
   function spawnSpikeTrap(){
     const lane = Math.floor(Math.random()*LANES);
@@ -2039,10 +2050,11 @@
           it.dead = true;
           if(Math.round(player.lane) === it.lane){
             const before = player.count;
-            player.count = Math.max(1, Math.round(player.count * (1-SPIKE_PENALTY_PCT)));
+            const spikePenaltyFrac = devSettings.spikePenaltyPct/100;
+            player.count = Math.max(1, Math.round(player.count * (1-spikePenaltyFrac)));
             const lost = before - player.count;
             const cx = screenX(it.lane,1);
-            spawnFloatText('-'+Math.round(SPIKE_PENALTY_PCT*100)+'%', cx, playerRowY-40, '#ff8a5c');
+            spawnFloatText('-'+Math.round(spikePenaltyFrac*100)+'%', cx, playerRowY-40, '#ff8a5c');
             spawnParticles(cx, playerRowY, '#ff8a5c', 16);
             shakeT = 0.2;
             playHit();
@@ -2458,23 +2470,57 @@
   }
 
   function drawPlayer(){
+    // original mecha/robot design holding a rifle (not based on any existing copyrighted
+    // character's specific design) - angular armored torso, twin-eye visor on the helmet,
+    // shoulder plates, and a rifle held across the body. COUNT is shown on the chest plate.
     const x = screenX(player.lane,1), y = playerRowY;
     ctx.save();
     ctx.translate(x,y);
     ctx.fillStyle='rgba(0,0,0,0.35)';
     ctx.beginPath();
-    ctx.ellipse(0,26,24,8,0,0,Math.PI*2);
+    ctx.ellipse(0,30,26,8,0,0,Math.PI*2);
     ctx.fill();
-    ctx.fillStyle = '#3fa9ff';
-    roundRect(ctx,-20,-20,40,46,14); ctx.fill();
-    ctx.fillStyle = '#ffe0b2';
-    ctx.beginPath(); ctx.arc(0,-28,14,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#ffd23f';
-    ctx.beginPath(); ctx.arc(0,-2,16,0,Math.PI*2); ctx.fill();
+    // legs
+    ctx.fillStyle = '#2b3550';
+    roundRect(ctx,-14,10,10,18,3); ctx.fill();
+    roundRect(ctx,4,10,10,18,3); ctx.fill();
+    // torso
+    ctx.fillStyle = '#4a5a7a';
+    roundRect(ctx,-18,-14,36,30,8); ctx.fill();
+    // arms
+    ctx.fillStyle = '#3f4d68';
+    roundRect(ctx,-25,-8,8,20,3); ctx.fill();
+    roundRect(ctx,17,-8,8,20,3); ctx.fill();
+    // shoulder plates
+    ctx.fillStyle = '#5c6d90';
+    ctx.beginPath(); ctx.ellipse(-20,-10,8,10,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(20,-10,8,10,0,0,Math.PI*2); ctx.fill();
+    // rifle, held diagonally across the body
+    ctx.save();
+    ctx.translate(16,0);
+    ctx.rotate(-0.5);
+    ctx.fillStyle = '#23262f';
+    roundRect(ctx,-4,-22,8,34,2); ctx.fill();
+    ctx.fillStyle = '#3a3f4d';
+    roundRect(ctx,-6,4,12,8,2); ctx.fill();
+    ctx.restore();
+    // chest plate / COUNT badge
+    ctx.fillStyle='#3fa9ff';
+    roundRect(ctx,-14,-8,28,18,6); ctx.fill();
     ctx.fillStyle='#10131f';
-    ctx.font='bold 16px Segoe UI';
+    ctx.font='bold 14px Segoe UI';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(player.count, 0, -1);
+    ctx.fillText(player.count, 0, 1);
+    // head (angular helmet with a twin-eye visor)
+    ctx.fillStyle = '#4a5a7a';
+    roundRect(ctx,-11,-34,22,20,7); ctx.fill();
+    ctx.fillStyle = '#7fe8ff';
+    roundRect(ctx,-7,-28,6,6,2); ctx.fill();
+    roundRect(ctx,1,-28,6,6,2); ctx.fill();
+    // small antenna
+    ctx.strokeStyle = '#4a5a7a';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0,-34); ctx.lineTo(0,-40); ctx.stroke();
     ctx.restore();
   }
 
