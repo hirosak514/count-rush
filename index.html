@@ -756,7 +756,11 @@
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   const LANES = 3;
-  const laneW = W / LANES;
+  // >1 widens the 3-lane road so each side lane spills out past the screen edges at the
+  // player row instead of exactly fitting edge-to-edge, for a stronger perspective cue (1.5
+  // means each side lane hangs half of its own width off its screen edge).
+  const LANE_SPREAD = 1.5;
+  const laneW = (W / LANES) * LANE_SPREAD;
 
   // ---------- Pseudo-3D overhead-angle camera ----------
   // Camera angled further downward (more overhead/top-down) per reference: the horizon sits
@@ -780,8 +784,18 @@
   const vanishX = W/2;
   let camDist = 160; // smaller = steeper falloff = bigger size difference between near and far items (more pronounced depth cue)
 
-  function laneCenterX(lane){ // position at the near (player) row, full width
-    return lane*laneW + laneW/2;
+  // Boundaries of the 3-lane strip at the near (player) row, centered on vanishX. With
+  // LANE_SPREAD > 1 this strip is wider than the canvas, so laneStripLeft is negative and
+  // laneStripRight is past W - the left/right lanes deliberately run off both screen edges.
+  // Every flat x-position in the game (lane centers, road boundaries, bullet weave, drone
+  // columns) is derived from these same constants, so the road graphics and item positions
+  // always stay perfectly aligned with each other.
+  const laneStripLeft = vanishX - (LANES*laneW)/2;
+  const laneStripRight = vanishX + (LANES*laneW)/2;
+  const laneBoundary1 = laneStripLeft + laneW;
+  const laneBoundary2 = laneStripLeft + laneW*2;
+  function laneCenterX(lane){ // position at the near (player) row
+    return laneStripLeft + lane*laneW + laneW/2;
   }
   function project(d){ // d = depth from player (0 = at player, large = far near horizon)
     // Every item type except bossUnit is removed the instant d<=0, so they never render with
@@ -1906,7 +1920,7 @@
         it.dead = true;
         killed++;
         const cellW = laneW/DRONE_COLS;
-        const flatX = laneW + (it.col+0.5)*cellW;
+        const flatX = laneBoundary1 + (it.col+0.5)*cellW;
         spawnParticles(vanishX + (flatX-vanishX), playerRowY, '#ff6a3d', 4);
       } else if(it.type==='bossUnit' && it.hp > 0){
         // a bomb deals a percentage of the boss's max HP (devSettings.bombBossDamagePct,
@@ -2116,8 +2130,10 @@
   // depth units between consecutive rows - tuned so spheres touch near the player. Scaled down
   // to 1/3 of its old value (15 -> 5) to match DRONE_COLS tripling: each sphere's on-screen
   // radius is laneW/DRONE_COLS-based, so it shrank to 1/3 too, and rows need the same tighter
-  // spacing to keep touching instead of showing a gap between consecutive rows.
-  const ROW_DEPTH_SPACING = 5;
+  // spacing to keep touching instead of showing a gap between consecutive rows. Scaled back up
+  // by LANE_SPREAD (since widening the lanes also widens laneW, and so each sphere's radius,
+  // proportionally) to keep rows touching rather than overlapping now that spheres are bigger.
+  const ROW_DEPTH_SPACING = 5 * LANE_SPREAD;
 
   function spawnDroneRow(d){
     if(d===undefined) d = spawnD(SPAWN_D_CENTER);
@@ -2424,7 +2440,7 @@
       let best=null, bestDist=Infinity;
       for(const it of items){
         if(it.type==='drone' && !it.dead && it.d===targetD){
-          const colX = laneW + (it.col+0.5)*(laneW/DRONE_COLS);
+          const colX = laneBoundary1 + (it.col+0.5)*(laneW/DRONE_COLS);
           const dx = Math.abs(colX - bx);
           if(dx<bestDist){ bestDist=dx; best=it; }
         }
@@ -2522,7 +2538,7 @@
       tankDamageT = TANK_DAMAGE_EFFECT_DURATION;
       spawnFloatText('-'+Math.round(loss*10)/10, vanishX, playerRowY-34, '#ff4d5e');
       for(const it of droneCollisions){
-        const cx = laneW + (it.col+0.5)*(laneW/DRONE_COLS); // at the player row, scale==1
+        const cx = laneBoundary1 + (it.col+0.5)*(laneW/DRONE_COLS); // at the player row, scale==1
         spawnParticles(cx, playerRowY, '#ff4d5e', 6);
       }
       shakeT = Math.max(shakeT, 0.15);
@@ -2589,19 +2605,25 @@
     const roadFarD = spawnD(SPAWN_D_CENTER) + ROW_DEPTH_SPACING;
     const roadFarY = Math.max(horizonY, project(roadFarD).y);
     const roadFarScale = project(roadFarD).scale;
-    const tx0 = screenFlatX(0, roadFarScale);
-    const tx1 = screenFlatX(laneW, roadFarScale);
-    const tx2 = screenFlatX(laneW*2, roadFarScale);
-    const tx3 = screenFlatX(W, roadFarScale);
+    // top (far) corners, projected the same way items are; bottom (near) corners are the
+    // lane-strip boundaries themselves, since screenFlatX at scale=1 is the identity - this is
+    // what makes the road widen past the canvas edges at the bottom along with the lanes
+    const tx0 = screenFlatX(laneStripLeft, roadFarScale);
+    const tx1 = screenFlatX(laneBoundary1, roadFarScale);
+    const tx2 = screenFlatX(laneBoundary2, roadFarScale);
+    const tx3 = screenFlatX(laneStripRight, roadFarScale);
 
-    // sky above the road's far clip line
+    // sky above the road's far clip line (the canvas's own width/height - unrelated to lane spread)
     const sky = ctx.createLinearGradient(0,0,0,roadFarY);
     sky.addColorStop(0,'#1c2048');
     sky.addColorStop(1,'#2a2f5c');
     ctx.fillStyle = sky;
     ctx.fillRect(0,0,W,roadFarY);
 
-    // road: a trapezoid converging toward the vanishing point, clipped at roadFarY
+    // road: a trapezoid converging toward the vanishing point, clipped at roadFarY. The bottom
+    // corners intentionally sit beyond the canvas edges (laneStripLeft<0, laneStripRight>W) -
+    // canvas drawing clips to the visible area automatically, so this just lets the road (and
+    // the lanes on it) visibly run off both sides at the player row.
     const roadGrad = ctx.createLinearGradient(0,roadFarY,0,H);
     roadGrad.addColorStop(0,'#232852');
     roadGrad.addColorStop(1,'#11142a');
@@ -2609,41 +2631,42 @@
     ctx.beginPath();
     ctx.moveTo(tx0,roadFarY);
     ctx.lineTo(tx3,roadFarY);
-    ctx.lineTo(W,H);
-    ctx.lineTo(0,H);
+    ctx.lineTo(laneStripRight,H);
+    ctx.lineTo(laneStripLeft,H);
     ctx.closePath();
     ctx.fill();
 
     // lane tint (left blue-ish, right yellow-ish)
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(tx0,roadFarY); ctx.lineTo(tx3,roadFarY); ctx.lineTo(W,H); ctx.lineTo(0,H);
+    ctx.moveTo(tx0,roadFarY); ctx.lineTo(tx3,roadFarY); ctx.lineTo(laneStripRight,H); ctx.lineTo(laneStripLeft,H);
     ctx.closePath(); ctx.clip();
     ctx.fillStyle='rgba(63,169,255,0.07)';
-    ctx.beginPath(); ctx.moveTo(tx0,roadFarY); ctx.lineTo(tx1,roadFarY); ctx.lineTo(laneW,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(tx0,roadFarY); ctx.lineTo(tx1,roadFarY); ctx.lineTo(laneBoundary1,H); ctx.lineTo(laneStripLeft,H); ctx.closePath(); ctx.fill();
     ctx.fillStyle='rgba(255,210,63,0.07)';
-    ctx.beginPath(); ctx.moveTo(tx2,roadFarY); ctx.lineTo(tx3,roadFarY); ctx.lineTo(W,H); ctx.lineTo(laneW*2,H); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(tx2,roadFarY); ctx.lineTo(tx3,roadFarY); ctx.lineTo(laneStripRight,H); ctx.lineTo(laneBoundary2,H); ctx.closePath(); ctx.fill();
     ctx.restore();
 
     // lane divider lines, with scrolling dashes for a sense of forward motion
     roadScroll = (roadScroll + speed*0.02) % 40;
     ctx.strokeStyle = 'rgba(255,255,255,0.18)';
     const dividerTx = [tx1, tx2];
+    const dividerBottomX = [laneBoundary1, laneBoundary2];
     for(let i=1;i<LANES;i++){
       ctx.lineWidth = 3;
       ctx.setLineDash([16,14]);
       ctx.lineDashOffset = -roadScroll;
       ctx.beginPath();
       ctx.moveTo(dividerTx[i-1],roadFarY);
-      ctx.lineTo(i*laneW,H);
+      ctx.lineTo(dividerBottomX[i-1],H);
       ctx.stroke();
     }
     ctx.setLineDash([]);
     // outer edges
     ctx.lineWidth = 2;
     ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-    ctx.beginPath(); ctx.moveTo(tx0,roadFarY); ctx.lineTo(0,H); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(tx3,roadFarY); ctx.lineTo(W,H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx0,roadFarY); ctx.lineTo(laneStripLeft,H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx3,roadFarY); ctx.lineTo(laneStripRight,H); ctx.stroke();
 
     // draw items far-to-near so closer ones overlap farther ones
     const drawList = items.slice().sort((a,b)=> b.d-a.d);
@@ -2763,7 +2786,7 @@
       } else if(it.type==='drone'){
         // one small sphere per unit; the continuous stream of these fills the center lane
         const cellW = laneW/DRONE_COLS;
-        const flatX = laneW + (it.col+0.5)*cellW;
+        const flatX = laneBoundary1 + (it.col+0.5)*cellW;
         const cx = vanishX + (flatX - vanishX)*s;
         const r = Math.max(1.5, (cellW/2)*s);
         const pal = stagePalette();
