@@ -149,6 +149,19 @@
     flex-direction:column;
     align-items:center;
     justify-content:center;
+    /* "safe center" keeps the classic flexbox centering but, when the content is taller than
+       the box (e.g. a short phone viewport), falls back to aligning from the start instead of
+       clipping content off both ends with no way to reach it - overflow-y:auto then makes the
+       rest reachable by scrolling. Browsers that don't understand "safe center" simply ignore
+       this second declaration and keep plain "center" above, so this degrades safely on older
+       engines (it just won't help with the overflow case there). */
+    justify-content:safe center;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    /* html/body set touch-action:none globally (so touches control the game, not page
+       panning/zooming) - re-enable vertical touch scrolling just inside overlays so the start
+       screen etc. can actually be scrolled on a touchscreen when its content overflows. */
+    touch-action:pan-y;
     background:rgba(10,12,28,0.88);
     color:white;
     text-align:center;
