@@ -582,7 +582,7 @@
       <div class="devField">
         <label>ビームアイテムの出現率 (%)</label>
         <input type="number" id="devBeamItemPctInput" step="1" min="0" max="100">
-        <div class="hint">デフォルト 15%。左右レーンの「1」の板の代わりに、この確率でビームアイテム(⚡)が出現します(パイナップル爆弾の出現率とは独立)。拾うと武器がビーム砲になります。複数拾っても威力は重複しません</div>
+        <div class="hint">デフォルト 9%。左右レーンの「1」の板の代わりに、この確率でビームアイテム(⚡)が出現します(パイナップル爆弾の出現率とは独立)。拾うと武器がビーム砲になります。複数拾っても威力は重複しません</div>
       </div>
       <div class="devField">
         <label>ビーム砲の威力倍率 (x)</label>
@@ -858,7 +858,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 10.0, plate1000Pct: 4.0, bulletDamageDiv: 96610.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 10.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 0.6, cameraTiltPct: 1.0, camDist: 300.0, droneHitLifeLossMul: 1.5, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 30.0, bombBossDamagePct: 50.0, bossKillHealPct: 100.0, beamItemPct: 15.0, beamDamageMul: 1.4 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 10.0, plate1000Pct: 4.0, bulletDamageDiv: 96610.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 10.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 0.6, cameraTiltPct: 1.0, camDist: 300.0, droneHitLifeLossMul: 1.5, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 30.0, bombBossDamagePct: 50.0, bossKillHealPct: 100.0, beamItemPct: 9.0, beamDamageMul: 1.4 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -2799,18 +2799,24 @@
         ctx.arc(cx,y,r,0,Math.PI*2);
         ctx.fill();
       } else if(it.type==='bossUnit'){
-        // kaiju/monster-style redesign: spiky ridge, horns, glowing eyes and a toothy mouth,
-        // in place of the previous plain glowing orb. The HP-fill-from-bottom gauge inside the
-        // body is kept as-is.
+        // original kaiju/dinosaur-monster redesign (not a depiction of any existing character):
+        // an elongated standing body with a dorsal spike ridge running down the back, horns,
+        // glowing eyes and a toothy mouth. The body is an ellipse rather than a circle - twice
+        // as tall as it is wide - and is anchored so its feet stay on the same ground line the
+        // old circular body used, growing upward for a towering silhouette. The HP-fill-from-
+        // bottom gauge inside the body is kept as-is.
         const cx = screenX(1,s);
-        const br = Math.max(4, (laneW/3)*s);
+        const brH = Math.max(4, (laneW/3)*s);
+        const brV = brH*2; // vertical radius doubled vs. the horizontal radius
+        const groundY = y + brH; // same ground line the old circular body touched
+        const cy = groundY - brV; // body grows upward from the ground, not from its old center
         const pct = it.hp/it.maxHp;
         const bpal = stagePalette();
         ctx.save();
         ctx.shadowColor=bpal.bossShadow;
         ctx.shadowBlur=14*s;
         ctx.beginPath();
-        ctx.arc(cx,y,br,0,Math.PI*2);
+        ctx.ellipse(cx,cy,brH,brV,0,0,Math.PI*2);
         ctx.fillStyle = bpal.bossBody;
         ctx.fill();
         ctx.restore();
@@ -2821,63 +2827,80 @@
         ctx.beginPath();
         for(let i=0;i<=spikeCount;i++){
           const a = Math.PI*(1+i/spikeCount); // sweep across the top half
-          const rOuter = br*(i%2===0 ? 1.28 : 1.08);
-          const px = cx + Math.cos(a)*rOuter;
-          const pyy = y + Math.sin(a)*rOuter;
+          const rOuter = i%2===0 ? 1.28 : 1.08;
+          const px = cx + Math.cos(a)*brH*rOuter;
+          const pyy = cy + Math.sin(a)*brV*rOuter;
           if(i===0) ctx.moveTo(px,pyy); else ctx.lineTo(px,pyy);
         }
         ctx.closePath();
         ctx.fill();
         ctx.restore();
+        // dorsal spikes running down the back (down the elongated body), kaiju-style
+        ctx.save();
+        ctx.fillStyle = bpal.bossRidge;
+        const backSpikes = 4;
+        for(let i=0;i<backSpikes;i++){
+          const t = (i+1)/(backSpikes+1); // spread down the visible lower/back half of the body
+          const spy = cy + brV*(0.15 + t*0.75);
+          const spw = brH*0.22*(1-t*0.3);
+          const sph = brV*0.22*(1-t*0.2);
+          ctx.beginPath();
+          ctx.moveTo(cx-spw, spy+sph*0.5);
+          ctx.lineTo(cx, spy-sph*0.5);
+          ctx.lineTo(cx+spw, spy+sph*0.5);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
         // body fill (HP gauge rises from the bottom)
         ctx.save();
         ctx.beginPath();
-        ctx.arc(cx,y,br,0,Math.PI*2);
+        ctx.ellipse(cx,cy,brH,brV,0,0,Math.PI*2);
         ctx.clip();
-        const grad = ctx.createRadialGradient(cx-br*0.35,y-br*0.35,br*0.15,cx,y,br);
+        const grad = ctx.createRadialGradient(cx-brH*0.35,cy-brV*0.35,brH*0.15,cx,cy,brV);
         grad.addColorStop(0,bpal.bossLight);
         grad.addColorStop(0.5,bpal.bossMid);
         grad.addColorStop(1,bpal.bossDark);
         ctx.fillStyle = grad;
-        ctx.fillRect(cx-br, y-br+br*2*(1-pct), br*2, br*2*pct);
+        ctx.fillRect(cx-brH, cy-brV+brV*2*(1-pct), brH*2, brV*2*pct);
         ctx.restore();
         // horns
         ctx.fillStyle = '#efe4c0';
         ctx.beginPath();
-        ctx.moveTo(cx-br*0.5, y-br*0.75);
-        ctx.lineTo(cx-br*0.25, y-br*1.35);
-        ctx.lineTo(cx-br*0.08, y-br*0.68);
+        ctx.moveTo(cx-brH*0.5, cy-brV*0.75);
+        ctx.lineTo(cx-brH*0.25, cy-brV*1.1);
+        ctx.lineTo(cx-brH*0.08, cy-brV*0.68);
         ctx.closePath(); ctx.fill();
         ctx.beginPath();
-        ctx.moveTo(cx+br*0.5, y-br*0.75);
-        ctx.lineTo(cx+br*0.25, y-br*1.35);
-        ctx.lineTo(cx+br*0.08, y-br*0.68);
+        ctx.moveTo(cx+brH*0.5, cy-brV*0.75);
+        ctx.lineTo(cx+brH*0.25, cy-brV*1.1);
+        ctx.lineTo(cx+brH*0.08, cy-brV*0.68);
         ctx.closePath(); ctx.fill();
         // glowing eyes
         ctx.fillStyle = '#fff6a0';
-        ctx.beginPath(); ctx.ellipse(cx-br*0.32, y-br*0.12, br*0.17, br*0.2, 0, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(cx+br*0.32, y-br*0.12, br*0.17, br*0.2, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx-brH*0.32, cy-brV*0.12, brH*0.17, brV*0.1, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx+brH*0.32, cy-brV*0.12, brH*0.17, brV*0.1, 0, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = '#17240d';
-        ctx.beginPath(); ctx.arc(cx-br*0.32, y-br*0.08, br*0.08, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(cx+br*0.32, y-br*0.08, br*0.08, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx-brH*0.32, cy-brV*0.08, brH*0.08, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+brH*0.32, cy-brV*0.08, brH*0.08, 0, Math.PI*2); ctx.fill();
         // toothy mouth
         ctx.fillStyle = '#120a08';
-        roundRect(ctx, cx-br*0.4, y+br*0.25, br*0.8, br*0.32, 4*s); ctx.fill();
+        roundRect(ctx, cx-brH*0.4, cy+brV*0.12, brH*0.8, brV*0.16, 4*s); ctx.fill();
         ctx.fillStyle = '#f5f0e0';
         const teeth = 5;
         for(let i=0;i<teeth;i++){
-          const tx = cx-br*0.36 + i*(br*0.72/(teeth-1));
+          const tx = cx-brH*0.36 + i*(brH*0.72/(teeth-1));
           ctx.beginPath();
-          ctx.moveTo(tx-br*0.05, y+br*0.25);
-          ctx.lineTo(tx+br*0.05, y+br*0.25);
-          ctx.lineTo(tx, y+br*0.4);
+          ctx.moveTo(tx-brH*0.05, cy+brV*0.12);
+          ctx.lineTo(tx+brH*0.05, cy+brV*0.12);
+          ctx.lineTo(tx, cy+brV*0.2);
           ctx.closePath();
           ctx.fill();
         }
         // outline
         ctx.strokeStyle='#ffd23f';
         ctx.lineWidth=Math.max(1,2*s);
-        ctx.beginPath(); ctx.arc(cx,y,br,0,Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(cx,cy,brH,brV,0,0,Math.PI*2); ctx.stroke();
       } else if(it.type==='bullet'){
         const cx = screenX(it.lane,s);
         ctx.fillStyle = '#ffd23f';
