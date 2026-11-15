@@ -519,6 +519,11 @@
         <div class="hint">デフォルト 10%。スクロールスピードが「最大スクロールスピード(倍率)」に達して頭打ちになった後は、代わりに中央レーンの敵の列数(奥行き方向の密度)が50m進むごとにこの割合ずつ増えていきます</div>
       </div>
       <div class="devField">
+        <label>敵・アイテムの出現位置を奥へ (%)</label>
+        <input type="number" id="devSpawnDepthUpInput" step="1" min="-90" max="300">
+        <div class="hint">デフォルト 20%。敵やアイテムが出現する奥行き位置をこの割合だけ増やし、画面上で出現位置を上(奥)にずらします。負の値にすると逆に手前(下)にずれます</div>
+      </div>
+      <div class="devField">
         <label>弾の発射音</label>
         <select id="devShotSoundSelect">
           <option value="0">タイプ1: ピュン(デフォルト)</option>
@@ -677,7 +682,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, bgmVariant: 2, fireInterval: 10.0, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, bgmVariant: 2, fireInterval: 10.0, dmgLevel: 0.4, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 20.0 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -701,6 +706,7 @@
       plate5000Pct: (typeof parsed.plate5000Pct==='number' && isFinite(parsed.plate5000Pct) && parsed.plate5000Pct>=0) ? parsed.plate5000Pct : DEV_DEFAULTS.plate5000Pct,
       plate5000SpeedThreshold: (typeof parsed.plate5000SpeedThreshold==='number' && isFinite(parsed.plate5000SpeedThreshold) && parsed.plate5000SpeedThreshold>0) ? parsed.plate5000SpeedThreshold : DEV_DEFAULTS.plate5000SpeedThreshold,
       rowDensityGrowthPct: (typeof parsed.rowDensityGrowthPct==='number' && isFinite(parsed.rowDensityGrowthPct) && parsed.rowDensityGrowthPct>=0) ? parsed.rowDensityGrowthPct : DEV_DEFAULTS.rowDensityGrowthPct,
+      spawnDepthUpPct: (typeof parsed.spawnDepthUpPct==='number' && isFinite(parsed.spawnDepthUpPct) && parsed.spawnDepthUpPct>=-90) ? parsed.spawnDepthUpPct : DEV_DEFAULTS.spawnDepthUpPct,
     };
   }
   function loadDevSettings(){
@@ -986,6 +992,7 @@
   const devPlate5000Input = document.getElementById('devPlate5000Input');
   const devPlate5000ThresholdInput = document.getElementById('devPlate5000ThresholdInput');
   const devRowDensityInput = document.getElementById('devRowDensityInput');
+  const devSpawnDepthUpInput = document.getElementById('devSpawnDepthUpInput');
   const devShotSoundSelect = document.getElementById('devShotSoundSelect');
   const devBgmSelect = document.getElementById('devBgmSelect');
   const devPanelSave = document.getElementById('devPanelSave');
@@ -1017,6 +1024,7 @@
     devPlate5000Input.value = devSettings.plate5000Pct;
     devPlate5000ThresholdInput.value = devSettings.plate5000SpeedThreshold;
     devRowDensityInput.value = devSettings.rowDensityGrowthPct;
+    devSpawnDepthUpInput.value = devSettings.spawnDepthUpPct;
     devShotSoundSelect.value = String(devSettings.soundVariant);
     devBgmSelect.value = String(devSettings.bgmVariant);
     devPanelModal.style.display = 'flex';
@@ -1061,6 +1069,7 @@
     let plate5000Pct = parseFloat(devPlate5000Input.value);
     let plate5000SpeedThreshold = parseFloat(devPlate5000ThresholdInput.value);
     let rowDensityGrowthPct = parseFloat(devRowDensityInput.value);
+    let spawnDepthUpPct = parseFloat(devSpawnDepthUpInput.value);
     let soundVariant = parseInt(devShotSoundSelect.value, 10);
     let bgmVariant = parseInt(devBgmSelect.value, 10);
     if(!isFinite(pct) || pct<=0) pct = DEV_DEFAULTS.speedPct;
@@ -1080,6 +1089,7 @@
     if(!isFinite(plate5000Pct) || plate5000Pct<0) plate5000Pct = DEV_DEFAULTS.plate5000Pct;
     if(!isFinite(plate5000SpeedThreshold) || plate5000SpeedThreshold<=0) plate5000SpeedThreshold = DEV_DEFAULTS.plate5000SpeedThreshold;
     if(!isFinite(rowDensityGrowthPct) || rowDensityGrowthPct<0) rowDensityGrowthPct = DEV_DEFAULTS.rowDensityGrowthPct;
+    if(!isFinite(spawnDepthUpPct) || spawnDepthUpPct<-90) spawnDepthUpPct = DEV_DEFAULTS.spawnDepthUpPct;
     if(!Number.isInteger(soundVariant) || soundVariant<0 || soundVariant>4) soundVariant = DEV_DEFAULTS.soundVariant;
     if(!Number.isInteger(bgmVariant) || bgmVariant<0 || bgmVariant>4) bgmVariant = DEV_DEFAULTS.bgmVariant;
     pct = Math.max(10, Math.min(500, pct));
@@ -1100,8 +1110,9 @@
     plate5000Pct = Math.max(0, Math.min(100, plate5000Pct));
     plate5000SpeedThreshold = Math.max(1, Math.min(50, plate5000SpeedThreshold));
     rowDensityGrowthPct = Math.max(0, Math.min(100, rowDensityGrowthPct));
+    spawnDepthUpPct = Math.max(-90, Math.min(300, spawnDepthUpPct));
     const bgmChanged = bgmVariant !== devSettings.bgmVariant;
-    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, bgmVariant, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct };
+    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, bgmVariant, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct };
     persistDevSettings(devSettings);
     applyDevSettingsLive();
     ensureAudio();
@@ -1129,6 +1140,7 @@
     devPlate5000Input.value = devSettings.plate5000Pct;
     devPlate5000ThresholdInput.value = devSettings.plate5000SpeedThreshold;
     devRowDensityInput.value = devSettings.rowDensityGrowthPct;
+    devSpawnDepthUpInput.value = devSettings.spawnDepthUpPct;
     devShotSoundSelect.value = String(devSettings.soundVariant);
     devBgmSelect.value = String(devSettings.bgmVariant);
     applyDevSettingsLive();
@@ -1610,6 +1622,14 @@
   const SPAWN_D_PLATE = 85;
   const SPAWN_D_CENTER = 100;
 
+  // devSettings.spawnDepthUpPct raises/lowers the depth every enemy/item actually spawns at
+  // (on top of the SPAWN_D_* base values above): a larger depth renders smaller/higher on
+  // screen (closer to the horizon), a smaller depth renders bigger/lower (closer to the
+  // player), so this is the dev-adjustable "move the spawn position up/down" dial.
+  function spawnD(base){
+    return base * (1 + devSettings.spawnDepthUpPct/100);
+  }
+
   function plateColor(value){
     if(value>=5000) return '#b06bff';
     if(value>=1000) return '#ff2d55';
@@ -1650,11 +1670,11 @@
     // a bonus bomb occasionally takes the place of the "1" plate (devSettings.bombPct, independent
     // of the 99/300/1000 roll above) - picking it up stocks a bomb the player can drop later.
     if(Math.random() < Math.max(0, devSettings.bombPct)/100){
-      items.push({type:'bombPlate', lane:laneSmall, d:SPAWN_D_PLATE, baseH:40, dead:false});
+      items.push({type:'bombPlate', lane:laneSmall, d:spawnD(SPAWN_D_PLATE), baseH:40, dead:false});
     } else {
-      items.push({type:'plate', lane:laneSmall, d:SPAWN_D_PLATE, baseH:40, value:1, dead:false});
+      items.push({type:'plate', lane:laneSmall, d:spawnD(SPAWN_D_PLATE), baseH:40, value:1, dead:false});
     }
-    items.push({type:'plate', lane:laneBig, d:SPAWN_D_PLATE, baseH:40, value: bigVal, dead:false});
+    items.push({type:'plate', lane:laneBig, d:spawnD(SPAWN_D_PLATE), baseH:40, value: bigVal, dead:false});
   }
 
   const SPAWN_D_SPIKE = 85;
@@ -1662,7 +1682,7 @@
 
   function spawnSpikeTrap(){
     const lane = Math.floor(Math.random()*LANES);
-    items.push({type:'spike', lane, d:SPAWN_D_SPIKE, baseH:34, dead:false});
+    items.push({type:'spike', lane, d:spawnD(SPAWN_D_SPIKE), baseH:34, dead:false});
   }
 
   function spawnCenterObstacle(){
@@ -1674,7 +1694,7 @@
       const capacity = Math.round((small? 10+Math.random()*8 : 22+Math.random()*14) * diffScale);
       const reinforcement = Math.round((small? 15+Math.random()*20 : 60+Math.random()*90) * diffScale);
       items.push({
-        type:'toothpaste', lane:1, d:SPAWN_D_CENTER, baseH:64,
+        type:'toothpaste', lane:1, d:spawnD(SPAWN_D_CENTER), baseH:64,
         capacity: Math.max(4,Math.round(capacity)),
         maxCapacity: Math.max(4,Math.round(capacity)),
         reinforcement: Math.max(5,reinforcement),
@@ -1685,7 +1705,7 @@
       const bDiff = 1 + elapsed/80;
       const bossHp = Math.max(55, Math.round((70 + elapsed*1.6) * bDiff * (0.85+Math.random()*0.3)));
       items.push({
-        type:'bossUnit', lane:1, d:SPAWN_D_CENTER+80,
+        type:'bossUnit', lane:1, d:spawnD(SPAWN_D_CENTER)+80,
         hp:bossHp, maxHp:bossHp, bossDefeated:false, dead:false, passedPlayer:false
       });
     }
@@ -1697,7 +1717,7 @@
   const ROW_DEPTH_SPACING = 15; // depth units between consecutive rows - tuned so spheres touch near the player
 
   function spawnDroneRow(d){
-    if(d===undefined) d = SPAWN_D_CENTER;
+    if(d===undefined) d = spawnD(SPAWN_D_CENTER);
     for(let col=0; col<DRONE_COLS; col++){
       items.push({type:'drone', lane:1, col, d, dead:false});
     }
@@ -1780,7 +1800,7 @@
       playShot();
     }
     bullets.forEach(b=> b.d += BULLET_SPEED*dt);
-    bullets = bullets.filter(b=> b.d < SPAWN_D_CENTER+250);
+    bullets = bullets.filter(b=> b.d < spawnD(SPAWN_D_CENTER)+250);
 
     // spawn
     spawnTimerSide -= dt;
@@ -1837,13 +1857,13 @@
         // slot (so the column gets thicker without changing how fast it's all moving)
         const rowsToSpawn = Math.max(1, Math.round(rowDensityMul));
         for(let i=0; i<rowsToSpawn; i++){
-          spawnDroneRow(SPAWN_D_CENTER + i*(ROW_DEPTH_SPACING/rowsToSpawn));
+          spawnDroneRow(spawnD(SPAWN_D_CENTER) + i*(ROW_DEPTH_SPACING/rowsToSpawn));
         }
       }
       // rows now also accelerate/decelerate by depth (see depthSpeedMul), so time the spacing
       // using the actual speed a row has right as it's created (at SPAWN_D_CENTER) to keep
       // freshly spawned rows touching with no gap, same as before.
-      spawnTimerDrone = ROW_DEPTH_SPACING / Math.max(1, centerSpeed*depthSpeedMul(SPAWN_D_CENTER));
+      spawnTimerDrone = ROW_DEPTH_SPACING / Math.max(1, centerSpeed*depthSpeedMul(spawnD(SPAWN_D_CENTER)));
     }
 
     // move items closer to the player (depth decreases). A popped toothpaste is launching
