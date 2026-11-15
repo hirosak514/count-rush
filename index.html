@@ -1852,7 +1852,10 @@
     player.energy = player.maxEnergy; // life fully refilled on advancing to the next stage
     updateLifeBar();
     // unlike a normal pause, the stage-clear transition wipes the field - no leftover enemies
-    // or lane items carry over into the new stage, same as a fresh game start
+    // or lane items carry over into the new stage, same as a fresh game start. player.count,
+    // player.bombs (pineapple bomb stock) and player.hasBeam (beam cannon held) are NOT touched
+    // here, so they carry over into the next stage unchanged; the HUD is re-synced below just in
+    // case it went stale while the overlay was up.
     bullets = [];
     items = [];
     particles = [];
@@ -1865,6 +1868,8 @@
     droneRowCounter = 0;
     bombCooldown = 0;
     tankDamageT = 0;
+    updateBombHud();
+    updateBeamHud();
     stageClearOverlay.style.display = 'none';
     isPaused = false;
     lastTime = performance.now();
