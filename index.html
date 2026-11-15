@@ -549,17 +549,6 @@
         </select>
         <div class="hint">弾を撃つたびに鳴る効果音を切り替え</div>
       </div>
-      <div class="devField">
-        <label>BGM</label>
-        <select id="devBgmSelect">
-          <option value="0">BGM1: アーケード</option>
-          <option value="1">BGM2: レーシング</option>
-          <option value="2">BGM3: ダンジョン</option>
-          <option value="3">BGM4: スペースシューター</option>
-          <option value="4">BGM5: ボーナスステージ</option>
-        </select>
-        <div class="hint">プレイ中に流れる80年代風BGMを切り替え</div>
-      </div>
       <div class="devRow">
         <button class="btn secondary" id="devPanelReset">初期値に戻す</button>
         <button class="btn" id="devPanelSave">保存して適用</button>
@@ -700,7 +689,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, bgmVariant: 2, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 2.0, cameraTiltPct: 4.0, camDist: 160.0 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 5.0, plate1000Pct: 1.0, bulletDamageDiv: 100000.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 38.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 2.0, cameraTiltPct: 4.0, camDist: 160.0 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -709,7 +698,6 @@
       speedCoef: (typeof parsed.speedCoef==='number' && isFinite(parsed.speedCoef)) ? parsed.speedCoef : DEV_DEFAULTS.speedCoef,
       soundVariant: (Number.isInteger(parsed.soundVariant) && parsed.soundVariant>=0 && parsed.soundVariant<=4) ? parsed.soundVariant : DEV_DEFAULTS.soundVariant,
       centerSlowPct: (typeof parsed.centerSlowPct==='number' && isFinite(parsed.centerSlowPct)) ? parsed.centerSlowPct : DEV_DEFAULTS.centerSlowPct,
-      bgmVariant: (Number.isInteger(parsed.bgmVariant) && parsed.bgmVariant>=0 && parsed.bgmVariant<=4) ? parsed.bgmVariant : DEV_DEFAULTS.bgmVariant,
       fireInterval: (typeof parsed.fireInterval==='number' && isFinite(parsed.fireInterval) && parsed.fireInterval>0) ? parsed.fireInterval : DEV_DEFAULTS.fireInterval,
       dmgLevel: (typeof parsed.dmgLevel==='number' && isFinite(parsed.dmgLevel) && parsed.dmgLevel>0) ? parsed.dmgLevel : DEV_DEFAULTS.dmgLevel,
       collisionRows: (Number.isInteger(parsed.collisionRows) && parsed.collisionRows>=1) ? parsed.collisionRows : DEV_DEFAULTS.collisionRows,
@@ -816,6 +804,7 @@
     soundOn = !soundOn;
     try{ localStorage.setItem(SOUND_KEY, soundOn ? '1' : '0'); }catch(e){}
     refreshSoundBtn();
+    bgmAudio.muted = !soundOn;
   });
 
   // ---------- RANKING ----------
@@ -1037,7 +1026,6 @@
   const devCameraTiltInput = document.getElementById('devCameraTiltInput');
   const devCamDistInput = document.getElementById('devCamDistInput');
   const devShotSoundSelect = document.getElementById('devShotSoundSelect');
-  const devBgmSelect = document.getElementById('devBgmSelect');
   const devPanelSave = document.getElementById('devPanelSave');
   const devPanelReset = document.getElementById('devPanelReset');
   const devPanelClose = document.getElementById('devPanelClose');
@@ -1072,7 +1060,6 @@
     devCameraTiltInput.value = devSettings.cameraTiltPct;
     devCamDistInput.value = devSettings.camDist;
     devShotSoundSelect.value = String(devSettings.soundVariant);
-    devBgmSelect.value = String(devSettings.bgmVariant);
     devPanelModal.style.display = 'flex';
   }
   function closeDevPanel(){ devPanelModal.style.display = 'none'; }
@@ -1125,7 +1112,6 @@
     let cameraTiltPct = parseFloat(devCameraTiltInput.value);
     let camDistVal = parseFloat(devCamDistInput.value);
     let soundVariant = parseInt(devShotSoundSelect.value, 10);
-    let bgmVariant = parseInt(devBgmSelect.value, 10);
     if(!isFinite(pct) || pct<=0) pct = DEV_DEFAULTS.speedPct;
     if(!isFinite(coef) || coef<=0) coef = DEV_DEFAULTS.speedCoef;
     if(!isFinite(centerSlowPct)) centerSlowPct = DEV_DEFAULTS.centerSlowPct;
@@ -1148,7 +1134,6 @@
     if(!isFinite(cameraTiltPct) || cameraTiltPct<=0) cameraTiltPct = DEV_DEFAULTS.cameraTiltPct;
     if(!isFinite(camDistVal) || camDistVal<=0) camDistVal = DEV_DEFAULTS.camDist;
     if(!Number.isInteger(soundVariant) || soundVariant<0 || soundVariant>4) soundVariant = DEV_DEFAULTS.soundVariant;
-    if(!Number.isInteger(bgmVariant) || bgmVariant<0 || bgmVariant>4) bgmVariant = DEV_DEFAULTS.bgmVariant;
     pct = Math.max(10, Math.min(500, pct));
     coef = Math.max(0.5, Math.min(3, coef));
     centerSlowPct = Math.max(0, Math.min(90, centerSlowPct));
@@ -1171,13 +1156,11 @@
     plateLifetimeSec = Math.max(0.1, Math.min(30, plateLifetimeSec));
     cameraTiltPct = Math.max(1, Math.min(50, cameraTiltPct));
     camDistVal = Math.max(20, Math.min(500, camDistVal));
-    const bgmChanged = bgmVariant !== devSettings.bgmVariant;
-    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, bgmVariant, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal };
+    devSettings = { speedPct: pct, speedCoef: coef, soundVariant, centerSlowPct, fireInterval, dmgLevel, collisionRows, plate300Pct, plate1000Pct, bulletDamageDiv, dmgGrowthCoef, rowGapEvery, gapGrowthRate, maxSpeedMul, bombPct, plate5000Pct, plate5000SpeedThreshold, rowDensityGrowthPct, spawnDepthUpPct, plateLifetimeSec, cameraTiltPct, camDist: camDistVal };
     persistDevSettings(devSettings);
     applyDevSettingsLive();
     ensureAudio();
     playShot();
-    if(bgmChanged && bgmIsPlaying) restartBGM();
     closeDevPanel();
   });
   devPanelReset.addEventListener('click', ()=>{
@@ -1205,9 +1188,7 @@
     devCameraTiltInput.value = devSettings.cameraTiltPct;
     devCamDistInput.value = devSettings.camDist;
     devShotSoundSelect.value = String(devSettings.soundVariant);
-    devBgmSelect.value = String(devSettings.bgmVariant);
     applyDevSettingsLive();
-    if(bgmIsPlaying) restartBGM();
   });
   devPanelClose.addEventListener('click', closeDevPanel);
 
@@ -1398,67 +1379,26 @@
     boom.start(t0); boom.stop(t0+0.4);
   }
 
-  // ---------- BGM (looping 80s-style chiptune, 5 selectable variants) ----------
-  const BGM_PATTERNS = [
-    { name:'アーケード', tempo:140, waveBass:'square', waveLead:'square',
-      bass:[130.81,0,130.81,0,164.81,0,130.81,0],
-      lead:[523.25,659.25,783.99,659.25,523.25,659.25,783.99,987.77] },
-    { name:'レーシング', tempo:168, waveBass:'sawtooth', waveLead:'square',
-      bass:[146.83,146.83,196.00,196.00,164.81,164.81,196.00,196.00],
-      lead:[587.33,739.99,880.00,739.99,587.33,739.99,880.00,1046.50] },
-    { name:'ダンジョン', tempo:100, waveBass:'triangle', waveLead:'triangle',
-      bass:[110.00,0,98.00,0,87.31,0,98.00,0],
-      lead:[440.00,523.25,440.00,392.00,349.23,392.00,440.00,523.25] },
-    { name:'スペースシューター', tempo:150, waveBass:'square', waveLead:'sawtooth',
-      bass:[98.00,98.00,0,98.00,110.00,110.00,0,110.00],
-      lead:[783.99,987.77,1174.66,987.77,783.99,987.77,1174.66,1396.91] },
-    { name:'ボーナスステージ', tempo:172, waveBass:'square', waveLead:'square',
-      bass:[196.00,0,246.94,0,261.63,0,246.94,0],
-      lead:[783.99,880.00,987.77,1046.50,1174.66,1046.50,987.77,880.00] },
-  ];
+  // ---------- BGM (looping uploaded track) ----------
+  const bgmAudio = new Audio('bgm.mp3');
+  bgmAudio.loop = true;
+  bgmAudio.volume = 0.5;
+  bgmAudio.muted = !soundOn;
   let bgmIsPlaying = false;
-  let bgmTimeoutId = null;
-  let bgmStepIdx = 0;
-
-  function bgmNoteOsc(freq, type, dur, vol){
-    if(!actx) return;
-    const t0 = actx.currentTime;
-    const osc = actx.createOscillator();
-    const g = actx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, t0);
-    g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(vol, t0+0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
-    osc.connect(g); g.connect(actx.destination);
-    osc.start(t0); osc.stop(t0+dur+0.02);
-  }
-  function bgmScheduleStep(){
-    if(!bgmIsPlaying) return;
-    const pat = BGM_PATTERNS[devSettings.bgmVariant] || BGM_PATTERNS[0];
-    const stepDur = 60/pat.tempo/2; // eighth-note step length in seconds
-    const i = bgmStepIdx % 8;
-    if(soundOn && actx){
-      const bf = pat.bass[i];
-      const lf = pat.lead[i];
-      if(bf) bgmNoteOsc(bf, pat.waveBass, stepDur*0.9, 0.05);
-      if(lf) bgmNoteOsc(lf, pat.waveLead, stepDur*0.8, 0.045);
-    }
-    bgmStepIdx++;
-    bgmTimeoutId = setTimeout(bgmScheduleStep, stepDur*1000);
-  }
   function startBGM(){
-    if(bgmIsPlaying) return;
     bgmIsPlaying = true;
-    bgmStepIdx = 0;
-    bgmScheduleStep();
+    bgmAudio.muted = !soundOn;
+    // play() can reject (e.g. called outside a user gesture) - harmless, just means BGM stays
+    // silent until the next call. Guard .catch in case play() doesn't return a real promise.
+    const playPromise = bgmAudio.play();
+    if(playPromise && typeof playPromise.catch === 'function') playPromise.catch(()=>{});
   }
   function stopBGM(){
     bgmIsPlaying = false;
-    if(bgmTimeoutId){ clearTimeout(bgmTimeoutId); bgmTimeoutId = null; }
+    bgmAudio.pause();
   }
   function restartBGM(){
-    stopBGM();
+    bgmAudio.currentTime = 0;
     startBGM();
   }
 
@@ -2269,17 +2209,9 @@
         ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillText('+'+it.value, cx, y+1*s);
       } else if(it.type==='bombPlate'){
-        // taller than a normal plate (stands out as a special pickup) but capped to the lane's
-        // own width so it never bleeds into neighboring lanes
-        const BOMB_HEIGHT_SCALE = 4;
+        // just the pineapple itself now - no surrounding box/frame
         const cx = screenX(it.lane,s);
-        const w0 = (laneW-16)*s, h0 = it.baseH*s*BOMB_HEIGHT_SCALE;
-        ctx.fillStyle = '#4a3a10';
-        roundRect(ctx,cx-w0/2,y-h0/2,w0,h0,8*s); ctx.fill();
-        ctx.strokeStyle = '#ffd23f';
-        ctx.lineWidth = Math.max(1, 2*s);
-        roundRect(ctx,cx-w0/2,y-h0/2,w0,h0,8*s); ctx.stroke();
-        ctx.font = 'bold '+Math.max(10,26*s)+'px Segoe UI';
+        ctx.font = 'bold '+Math.max(14,40*s)+'px Segoe UI';
         ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillText('🍍', cx, y+1*s);
       } else if(it.type==='spike'){
@@ -2305,33 +2237,62 @@
         ctx.lineWidth=Math.max(1,2*s);
         ctx.strokeRect(cx-w0/2,y-h0*0.35,w0,h0*0.7);
       } else if(it.type==='toothpaste'){
-        // narrower + translucent so it doesn't wall off the view of what's behind it in the
-        // center lane (the drone stream / boss used to be fully hidden behind these panels).
-        // Once cleared (popped), it launches straight up and fades out instead of continuing
-        // to travel down the lane like an unpicked one.
+        // rendered as a bunch of grapes (was a toothpaste tube): individual grapes pop off one
+        // by one as capacity drops, so it visibly empties out the more it's shot, instead of
+        // just showing a numeric fill bar. Once cleared (popped), it launches straight up and
+        // fades out instead of continuing to travel down the lane like an unpicked one.
         const cx = screenX(1,s);
         const w0 = (laneW*0.52)*s, h0 = it.baseH*s;
-        const pct = it.capacity/it.maxCapacity;
+        const pct = Math.max(0, it.capacity/it.maxCapacity);
         const ry = y - (it.popped ? it.liftY*s : 0);
         const outerAlpha = it.popped ? it.popAlpha : 1;
+        // bunch layout: rows of grapes, widest at the bottom, narrowing toward the stem at top.
+        // Grapes are popped off bottom-row-first as capacity drops (visibleCount shrinks).
+        const GRAPE_ROWS = [1,2,3,3];
+        const totalGrapes = GRAPE_ROWS.reduce((a,b)=>a+b,0);
+        const visibleCount = Math.max(0, Math.round(pct*totalGrapes));
+        const grapeR = w0/6;
+        const rowGap = h0/(GRAPE_ROWS.length+0.5);
         ctx.save();
-        ctx.globalAlpha = 0.72*outerAlpha;
-        ctx.fillStyle = '#d8d8e8';
-        roundRect(ctx,cx-w0/2,ry-h0/2,w0,h0,10*s); ctx.fill();
-        ctx.fillStyle = '#bda8ff';
-        roundRect(ctx,cx-w0/2+3*s,ry-h0/2+3*s,(w0-6*s)*Math.max(0,pct),h0-6*s,6*s); ctx.fill();
+        ctx.globalAlpha = outerAlpha;
+        // stem + tiny leaf
+        ctx.strokeStyle = '#6b4a2a';
+        ctx.lineWidth = Math.max(1, 2.5*s);
+        ctx.beginPath();
+        ctx.moveTo(cx, ry-h0/2-6*s);
+        ctx.lineTo(cx, ry-h0/2+4*s);
+        ctx.stroke();
+        ctx.fillStyle = '#4caf50';
+        ctx.beginPath();
+        ctx.ellipse(cx+6*s, ry-h0/2-4*s, 6*s, 3.5*s, -0.5, 0, Math.PI*2);
+        ctx.fill();
+        let gi = 0;
+        for(let r=0; r<GRAPE_ROWS.length; r++){
+          const count = GRAPE_ROWS[r];
+          const rowY = ry - h0/2 + 6*s + r*rowGap;
+          for(let c=0; c<count; c++){
+            const spread = (count-1)*grapeR*1.5;
+            const gx = cx - spread/2 + c*grapeR*1.5;
+            if(gi < visibleCount){
+              const grad = ctx.createRadialGradient(gx-grapeR*0.3,rowY-grapeR*0.3,grapeR*0.15,gx,rowY,grapeR);
+              grad.addColorStop(0,'#c9a0ff');
+              grad.addColorStop(0.6,'#8e4fd1');
+              grad.addColorStop(1,'#5c2a96');
+              ctx.fillStyle = grad;
+              ctx.beginPath();
+              ctx.arc(gx, rowY, grapeR, 0, Math.PI*2);
+              ctx.fill();
+            }
+            gi++;
+          }
+        }
         ctx.restore();
         ctx.save();
         ctx.globalAlpha = outerAlpha;
-        ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-        ctx.lineWidth = Math.max(1, 1.4*s);
-        roundRect(ctx,cx-w0/2,ry-h0/2,w0,h0,10*s); ctx.stroke();
-        ctx.fillStyle='#8f8fae';
-        ctx.fillRect(cx-7*s,ry-h0/2-9*s,14*s,10*s);
         ctx.fillStyle='#10131f';
         ctx.font='bold '+Math.max(9,15*s)+'px Segoe UI';
         ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText(it.capacity, cx, ry+6*s);
+        ctx.fillText(Math.max(0,Math.ceil(it.capacity)), cx, ry+h0/2+14*s);
         ctx.font='bold '+Math.max(8,12*s)+'px Segoe UI';
         ctx.fillStyle='#bda8ff';
         ctx.fillText('援軍+'+it.reinforcement, cx, ry-h0/2-14*s);
