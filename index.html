@@ -1521,6 +1521,7 @@
   ];
   function stagePalette(){ return STAGE_PALETTES[(stage-1) % STAGE_PALETTES.length]; }
   let spawnTimerSide, spawnTimerCenter, spawnTimerSpike, spawnTimerDrone, droneRowCounter = 0;
+  let lastStepIndex = -1; // throttles the strawberry-swarm footstep sound (see WALK_STEP_PERIOD)
   let bombCooldown = 0;
   // Pineapple-bomb throw animation: pressing the bomb key doesn't wipe the screen instantly -
   // a pineapple arcs up into view (growing bigger, i.e. coming toward the camera), then drops
@@ -1627,6 +1628,24 @@
     osc.connect(gain); gain.connect(actx.destination);
     osc.start(t0); osc.stop(t0+0.13);
   }
+  // soft footstep "pat", synced to the strawberry swarm's shared walk-bob clock (see
+  // WALK_STEP_PERIOD below) rather than per-unit, since dozens of strawberries can be on
+  // screen at once sharing (almost) the same cycle - one subtle shared step sound reads as
+  // "the swarm is walking" without turning into noise chaos.
+  function playStep(){
+    if(!soundOn || !actx) return;
+    const t0 = actx.currentTime;
+    const freq = 150 + Math.random()*40;
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    osc.frequency.exponentialRampToValueAtTime(freq*0.6, t0+0.05);
+    gain.gain.setValueAtTime(0.05, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+0.07);
+    osc.connect(gain); gain.connect(actx.destination);
+    osc.start(t0); osc.stop(t0+0.08);
+  }
   function playHit(){
     if(!soundOn || !actx) return;
     const t0 = actx.currentTime;
@@ -1725,6 +1744,7 @@
     spawnTimerSpike = 4.0;
     spawnTimerDrone = 0.1;
     droneRowCounter = 0;
+    lastStepIndex = -1;
     bombCooldown = 0;
     shakeT = 0;
     tankDamageT = 0;
@@ -1879,6 +1899,7 @@
     spawnTimerSpike = 4.0;
     spawnTimerDrone = 0.1;
     droneRowCounter = 0;
+    lastStepIndex = -1;
     bombCooldown = 0;
     tankDamageT = 0;
     updateBombHud();
@@ -2327,6 +2348,17 @@
       // using the actual speed a row has right as it's created (at SPAWN_D_CENTER) to keep
       // freshly spawned rows touching with no gap, same as before.
       spawnTimerDrone = ROW_DEPTH_SPACING / Math.max(1, centerSpeed*depthSpeedMul(spawnD(SPAWN_D_CENTER)));
+    }
+
+    // strawberry-swarm footstep sound, synced to the same global walk clock render() uses for
+    // the visual bob (walkPhase = elapsed*8, two bob-peaks per cycle) - one shared step plays
+    // per half-cycle rather than one per strawberry, which would be noise chaos with dozens on
+    // screen. Only plays while at least one is actually alive.
+    const WALK_STEP_PERIOD = Math.PI/8; // half-period of elapsed*8 in walkPhase terms
+    const stepIndex = Math.floor(elapsed/WALK_STEP_PERIOD);
+    if(stepIndex !== lastStepIndex){
+      lastStepIndex = stepIndex;
+      if(items.some(it=> it.type==='drone' && !it.dead)) playStep();
     }
 
     // move items closer to the player (depth decreases). A popped toothpaste is launching
@@ -2844,7 +2876,7 @@
         // the unshifted y, for a slight "walking" bounce. Offset per-column so the whole stream
         // doesn't bob in lockstep.
         const walkPhase = elapsed*8 + it.col*1.7;
-        const bobY = -Math.abs(Math.sin(walkPhase)) * r*0.12;
+        const bobY = -Math.abs(Math.sin(walkPhase)) * r*0.32;
         ctx.save();
         ctx.translate(0,bobY);
         ctx.beginPath();
