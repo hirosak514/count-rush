@@ -506,8 +506,8 @@
       画面上の敵を一瞬で一掃できる!<br><br>
       左右レーンにまれに出る<b style="color:#7fe8ff">⚡ビームアイテム</b>を取ると武器がビーム砲になり威力アップ!
       敵と衝突したりトゲ床を踏むと元の武器に戻る。<br><br>
-      左右レーンにまれに出る<b style="color:#ffb84d">🤖ロボットアイテム</b>は、他の弾を一定数命中させるまでは撃っても取れない。
-      解禁後に取るとロボットに変形して攻撃力アップ!敵と衝突したりトゲ床を踏むと元の姿に戻る。<br><br>
+      左右レーンにまれに出る<b style="color:#ffb84d">🤖宝箱アイテム</b>を撃ち続けて中の色を全部抜くとロボットを獲得!
+      変形して攻撃力アップ。敵と衝突したりトゲ床を踏むと元の姿に戻る。<br><br>
       <b style="color:#3fa9ff">1,000m進むごとに1ステージクリア</b>。クリアするとLIFEが全回復して次のステージへ。
       ステージが上がるごとに敵の密度とボスの出現率が上がっていく!
     </p>
@@ -616,9 +616,9 @@
         <div class="hint">デフォルト 2.0倍。ロボットに変形している間、通常の弾の威力計算結果にこの倍率を掛けます(ビーム砲を同時に持っている場合はビームの倍率とも掛け合わされます)</div>
       </div>
       <div class="devField">
-        <label>ロボットアイテムの解禁に必要な命中数 (発)</label>
+        <label>ロボット獲得に必要な弾数 (発)</label>
         <input type="number" id="devRobotHitReqInput" step="1" min="0">
-        <div class="hint">デフォルト 100発。ロボットアイテム以外の弾が何かに命中した回数がこの数に達するまでは、ロボットアイテムを撃っても取れません(通り抜けます)。ロボットに変形すると回数は0にリセットされ、次に変形するにはまた命中させ直す必要があります</div>
+        <div class="hint">デフォルト 5,000発。ロボットアイテムは宝箱の見た目で、中のレベルゲージ(本体の色)はこの発数ぶんの弾が当たるごとに減っていきます。ゲージが0になると宝箱が開いてロボットを獲得できます</div>
       </div>
       <div class="devField">
         <label>ステージごとの列長増加率 (%)</label>
@@ -748,8 +748,8 @@
       画面上の敵を一瞬で一掃できる!<br><br>
       左右レーンにまれに出る<b style="color:#7fe8ff">⚡ビームアイテム</b>を取ると武器がビーム砲になり威力アップ!
       敵と衝突したりトゲ床を踏むと元の武器に戻る。<br><br>
-      左右レーンにまれに出る<b style="color:#ffb84d">🤖ロボットアイテム</b>は、他の弾を一定数命中させるまでは撃っても取れない。
-      解禁後に取るとロボットに変形して攻撃力アップ!敵と衝突したりトゲ床を踏むと元の姿に戻る。<br><br>
+      左右レーンにまれに出る<b style="color:#ffb84d">🤖宝箱アイテム</b>を撃ち続けて中の色を全部抜くとロボットを獲得!
+      変形して攻撃力アップ。敵と衝突したりトゲ床を踏むと元の姿に戻る。<br><br>
       <b style="color:#3fa9ff">1,000m進むごとに1ステージクリア</b>。クリアするとLIFEが全回復して次のステージへ。
       ステージが上がるごとに敵の密度とボスの出現率が上がっていく!
     </p>
@@ -891,7 +891,7 @@
   // gets reset by the viewer's browser/environment, since it isn't tied to this one browser tab.
   const DEV_PASSCODE = '212116';
   const DEV_KEY = 'countRush_devSettings_v1';
-  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 10.0, plate1000Pct: 4.0, bulletDamageDiv: 96610.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 10.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 0.6, cameraTiltPct: 1.0, camDist: 300.0, droneHitLifeLossMul: 1.5, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 30.0, bombBossDamagePct: 50.0, bossKillHealPct: 100.0, beamItemPct: 9.0, beamDamageMul: 1.4, robotItemPct: 5.0, robotDamageMul: 2.0, robotHitRequirement: 100 };
+  const DEV_DEFAULTS = { speedPct: 10.0, speedCoef: 1.5, soundVariant: 4, centerSlowPct: 60.0, fireInterval: 0.2, dmgLevel: 1.0, collisionRows: 60, plate300Pct: 10.0, plate1000Pct: 4.0, bulletDamageDiv: 96610.0, dmgGrowthCoef: 1.0, rowGapEvery: 30, gapGrowthRate: 0.2, maxSpeedMul: 6.0, bombPct: 10.0, plate5000Pct: 50.0, plate5000SpeedThreshold: 2.0, rowDensityGrowthPct: 10.0, spawnDepthUpPct: 200.0, plateLifetimeSec: 0.6, cameraTiltPct: 1.0, camDist: 300.0, droneHitLifeLossMul: 1.5, bossHitLifeLossPct: 45.0, spikePenaltyPct: 10.0, stageRowLengthGrowthPct: 20.0, stageBossRateGrowthPct: 10.0, distanceDisplayMul: 30.0, bombBossDamagePct: 50.0, bossKillHealPct: 100.0, beamItemPct: 9.0, beamDamageMul: 1.4, robotItemPct: 5.0, robotDamageMul: 2.0, robotHitRequirement: 5000 };
 
   function sanitizeDevSettings(parsed){
     if(!parsed || typeof parsed !== 'object') return Object.assign({}, DEV_DEFAULTS);
@@ -1772,7 +1772,6 @@
       bombs: 0,
       hasBeam: false,
       hasRobot: false,
-      robotGateHits: 0, // count of other-bullet hits landed since the last robot pickup (or game start) - gates picking up the next robot item, see devSettings.robotHitRequirement
     };
     bullets = [];
     items = [];
@@ -2158,8 +2157,9 @@
     // a bonus bomb, beam item or robot item occasionally takes the place of the "1" plate
     // (devSettings.bombPct / beamItemPct / robotItemPct, independent of the 99/300/1000 roll
     // above) - picking up a bomb stocks one to drop later; picking up a beam item switches the
-    // weapon to the beam cannon; picking up a robot item (once unlocked - see the robotPlate
-    // collision handling below) transforms the tank into a robot (see fire logic in update()).
+    // weapon to the beam cannon; a robot item is a treasure chest that must be emptied out by
+    // shooting it (see the robotPlate collision handling below) before it transforms the tank
+    // into a robot (see fire logic in update()).
     const slotRoll = Math.random();
     const bombThresh = Math.max(0, devSettings.bombPct)/100;
     const beamThresh = bombThresh + Math.max(0, devSettings.beamItemPct)/100;
@@ -2169,7 +2169,10 @@
     } else if(slotRoll < beamThresh){
       items.push({type:'beamPlate', lane:laneSmall, d:spawnD(SPAWN_D_PLATE), baseH:40, dead:false, groundT:0});
     } else if(slotRoll < robotThresh){
-      items.push({type:'robotPlate', lane:laneSmall, d:spawnD(SPAWN_D_PLATE), baseH:40, dead:false, groundT:0});
+      // hp/maxHp floored at 1 so a dev panel value of 0 degrades gracefully (opens on the
+      // first hit) instead of leaving the chest permanently un-openable (hp<=0 from the start).
+      const robotChestHp = Math.max(1, devSettings.robotHitRequirement);
+      items.push({type:'robotPlate', lane:laneSmall, d:spawnD(SPAWN_D_PLATE), baseH:40, dead:false, groundT:0, hp:robotChestHp, maxHp:robotChestHp});
     } else {
       items.push({type:'plate', lane:laneSmall, d:spawnD(SPAWN_D_PLATE), baseH:40, value:1, dead:false, groundT:0});
     }
@@ -2458,7 +2461,6 @@
             spawnParticles(screenX(it.lane,p.scale), p.y, plateColor(it.value));
             playPop(it.value>=1000?980:(it.value>=300?850:(it.value>=99?700:420)));
             b.d = -999;
-            player.robotGateHits++; // counts toward unlocking the next robot item (devSettings.robotHitRequirement)
             break;
           }
         }
@@ -2474,7 +2476,6 @@
             spawnParticles(screenX(it.lane,p.scale), p.y, '#ffd23f');
             playPop(600);
             b.d = -999;
-            player.robotGateHits++;
             break;
           }
         }
@@ -2492,28 +2493,31 @@
             spawnParticles(screenX(it.lane,p.scale), p.y, '#7fe8ff');
             playPop(820);
             b.d = -999;
-            player.robotGateHits++;
             break;
           }
         }
       } else if(it.type==='robotPlate'){
+        // a treasure-chest pickup: it has its own level gauge (it.hp, default devSettings.
+        // robotHitRequirement) that drains by exactly 1 per bullet that hits it - regardless of
+        // that bullet's actual damage value, this is purely a bullet-*count* gate - until it
+        // reaches 0, at which point the chest opens and the robot is obtained. A multishot
+        // volley can land several hits on it within the same frame (no break below until it's
+        // actually emptied), same as the boss's own damage loop.
         for(const b of bullets){
-          if(b.d<0 || b.lane!==it.lane) continue;
+          if(b.d<0 || b.lane!==it.lane || it.hp<=0) continue;
           if(b.d >= it.d){
-            // locked until enough other bullets have landed hits (devSettings.
-            // robotHitRequirement, default 100) since the last robot pickup (or game start) -
-            // until then this bullet just passes through harmlessly, same as missing
-            if(player.robotGateHits < devSettings.robotHitRequirement) continue;
-            it.dead = true;
-            player.hasRobot = true;
-            player.robotGateHits = 0; // re-lock the next robot item until another full gate's worth of hits lands
-            updateRobotHud();
-            const p = project(it.d);
-            spawnFloatText('🤖ROBOT', screenX(it.lane,p.scale), p.y, '#ffb84d');
-            spawnParticles(screenX(it.lane,p.scale), p.y, '#ffb84d');
-            playPop(500);
+            it.hp -= 1;
             b.d = -999;
-            break;
+            if(it.hp<=0){
+              it.dead = true;
+              player.hasRobot = true;
+              updateRobotHud();
+              const p = project(it.d);
+              spawnFloatText('🤖ROBOT', screenX(it.lane,p.scale), p.y, '#ffb84d');
+              spawnParticles(screenX(it.lane,p.scale), p.y, '#ffb84d');
+              playPop(500);
+              break;
+            }
           }
         }
       } else if(it.type==='toothpaste'){
@@ -2522,7 +2526,6 @@
           if(b.d >= it.d){
             it.capacity -= b.dmg;
             b.d = -999;
-            player.robotGateHits++;
             const p = project(it.d);
             spawnParticles(screenX(1,p.scale), p.y, '#ffffff', 3);
             if(it.capacity<=0){
@@ -2541,7 +2544,6 @@
           if(b.d >= it.d){
             it.hp -= b.dmg;
             b.d = -999;
-            player.robotGateHits++;
             if(Math.random()<0.1) playHit();
             if(it.hp<=0 && !it.bossDefeated){
               it.bossDefeated = true;
@@ -2605,7 +2607,6 @@
         rowList[bestI].dead = true;
         rowList.splice(bestI,1);
         b.d = -999;
-        player.robotGateHits++;
       }
     }
     bullets = bullets.filter(b=> b.d > -500);
@@ -2628,7 +2629,7 @@
         if(it.d <= -40) it.dead = true; // passes by harmlessly if missed
       } else if(it.type==='robotPlate'){
         if(it.d <= 0){ it.groundT = (it.groundT||0) + dt; if(it.groundT >= devSettings.plateLifetimeSec) it.dead = true; }
-        if(it.d <= -40) it.dead = true; // passes by harmlessly if missed (or never unlocked in time)
+        if(it.d <= -40) it.dead = true; // passes by harmlessly if not emptied out in time
       } else if(it.type==='spike'){
         if(it.d <= 0){
           it.dead = true;
@@ -2868,18 +2869,27 @@
         ctx.fillText('⚡', cx, y+1*s);
         ctx.restore();
       } else if(it.type==='robotPlate'){
-        // a robot pickup - glows orange once unlocked (enough other-bullet hits landed, see
-        // devSettings.robotHitRequirement), stays dim/grayed-out while still locked so it's
-        // visually clear why shooting it does nothing yet
+        // a treasure chest holding the robot - a level gauge drains its gold color away from
+        // the bottom up as bullets chip it down (it.hp/it.maxHp), the same "strip the body's
+        // color" technique the boss's HP gauge uses: a dim base color first, then a vivid gold
+        // fill clipped to the chest shape and sized to the remaining fraction.
         const cx = screenX(it.lane,s);
-        const unlocked = player.robotGateHits >= devSettings.robotHitRequirement;
+        const w0 = (laneW-16)*s, h0 = it.baseH*s;
+        const pct = Math.max(0, it.hp/it.maxHp);
         ctx.save();
-        if(unlocked){ ctx.shadowColor = '#ffb84d'; ctx.shadowBlur = 14*s; ctx.globalAlpha = 1; }
-        else { ctx.globalAlpha = 0.45; }
-        ctx.font = 'bold '+Math.max(14,38*s)+'px Segoe UI';
-        ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText('🤖', cx, y+1*s);
+        ctx.shadowColor = '#ffb84d';
+        ctx.shadowBlur = 8*s;
+        ctx.fillStyle = '#4a3b2a'; // dim/drained base
+        roundRect(ctx,cx-w0/2,y-h0/2,w0,h0,8*s); ctx.fill();
+        roundRect(ctx,cx-w0/2,y-h0/2,w0,h0,8*s); ctx.clip();
+        ctx.fillStyle = '#d9a441'; // vivid gold fill, remaining fraction only
+        ctx.fillRect(cx-w0/2, y-h0/2 + h0*(1-pct), w0, h0*pct);
         ctx.restore();
+        // lid seam + lock, always drawn on top regardless of the gauge
+        ctx.fillStyle = '#2b2116';
+        roundRect(ctx,cx-w0/2,y-h0*0.1,w0,h0*0.22,3*s); ctx.fill();
+        ctx.fillStyle = '#ffd23f';
+        roundRect(ctx,cx-w0*0.08,y-h0*0.05,w0*0.16,h0*0.3,3*s); ctx.fill();
       } else if(it.type==='spike'){
         const cx = screenX(it.lane,s);
         const w0 = (laneW-14)*s, h0 = it.baseH*s;
